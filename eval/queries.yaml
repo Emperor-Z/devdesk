@@ -1,0 +1,11 @@
+# Seeded smoke-test queries. The full eval harness (scoring/runner) lands
+# in a later phase; this file just stops that phase starting from zero.
+# expected_source_file is relative to the project's source_path.
+
+- question: "What agents make up the Ares stack and how do they talk to each other?"
+  expected_agent: ares
+  expected_source_file: README.md
+
+- question: "What is VeriSim's high-level architecture?"
+  expected_agent: verisim
+  expected_source_file: ARCHITECTURE.md
