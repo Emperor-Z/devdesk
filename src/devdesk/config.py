@@ -23,6 +23,12 @@ GEMINI_EMBEDDING_MODEL = os.environ.get(
 )
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 
+LANGFUSE_PUBLIC_KEY = os.environ.get("LANGFUSE_PUBLIC_KEY", "")
+LANGFUSE_SECRET_KEY = os.environ.get("LANGFUSE_SECRET_KEY", "")
+LANGFUSE_HOST = os.environ.get("LANGFUSE_HOST", "http://localhost:3000")
+
+LOG_DIR = REPO_ROOT / "logs"
+
 # MiniLM's own hard cutoff is 256 tokens; every embedding backend is capped
 # to the stricter of the two so chunk size never silently truncates.
 MAX_CHUNK_TOKENS = 220
@@ -62,3 +68,7 @@ PROJECTS: dict[str, ProjectConfig] = {
 
 def use_gemini_embeddings() -> bool:
     return bool(GOOGLE_API_KEY)
+
+
+def use_langfuse() -> bool:
+    return bool(LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY)
