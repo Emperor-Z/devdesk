@@ -62,8 +62,8 @@ repo's history once it's been in a merged PR.
    forward — see below; also needs to fix the ungraceful-model-error gap
    found in this phase, see Status)
 5. Eval harness — done (retrieval mode verified live; see Status)
-6. Deployment (Docker, Cloud Run config, least-privilege IAM)
-7. Final README pass
+6. Deployment — done (container verified locally; not yet deployed to GCP)
+7. Final README pass — done
 
 ## Environment notes worth remembering
 - **Python 3.14 is risky for `chromadb`** — build in a Python 3.12 venv
@@ -214,4 +214,23 @@ Results written to `eval/results/<utc>_<mode>.json`.
   gemini-2.5-flash-lite is 404 for new users; gemini-3.8-flash-lite doesn't
   exist. Always run a 4-query `--ids` sample before a full e2e run.
 
-Not yet done: deployment.
+**Phase 6 (deployment), branch `feat/deploy`**: `server.py` (FastAPI,
+`POST /ask`, `GET /healthz`, one process-wide runner, refuses to start
+without GOOGLE_API_KEY because the index is Gemini-embedded).
+`run_question` now deletes each session afterwards (was an in-memory
+leak for a long-running server). MiniLM moved to an `offline` extra so
+the image has no torch (557MB). `DEVDESK_HOME` env overrides REPO_ROOT —
+a non-editable install resolves `parents[2]` into site-packages.
+`deploy/cloudrun_service.yaml` + `deploy/iam_setup.md`: runtime SA with
+only secretAccessor on the key secret, no allUsers invoker, maxScale=1
+(per-process rate limiter vs per-project quota), scale-to-zero.
+Verified locally in Docker: healthz, a real /ask round trip (ares_agent,
+fully cited, 25s), 422 on bad input, no `.env` in image, non-root, and
+refusal to start without a key. **Not deployed to GCP**: no gcloud on
+this machine, and Cloud Run needs a billing-enabled project.
+51 unit tests pass.
+
+**Phase 7**: README final pass done (stale 0.35 floor / 2.5-flash /
+"deployment later" text fixed; Deployment + Evaluation sections).
+
+Open items: e2e eval failures (see README), live Cloud Run deploy.

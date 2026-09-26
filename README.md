@@ -24,7 +24,7 @@ in the router or the RAG pipeline is tenant-specific.
 
 ```mermaid
 flowchart TB
-    U[User question] --> R[devdesk_router\nADK LlmAgent, ReAct instruction]
+    U[User question\nCLI or HTTP /ask] --> R[devdesk_router\nADK LlmAgent, ReAct instruction]
     R -->|AgentTool| VA[verisim_agent]
     R -->|AgentTool| AA[ares_agent]
     R -->|tool call| SA[search_all_projects]
@@ -68,7 +68,8 @@ avoids that.
 `search_docs` before answering, cite the tool's pre-formatted `citation`
 string on every claim, and say plainly when nothing relevant was found
 rather than generalizing from training knowledge. `search_docs` itself
-enforces a 0.35 cosine-similarity floor — weak matches are dropped rather
+enforces a cosine-similarity floor (0.64 for Gemini embeddings, 0.35 for
+MiniLM — measured, see Evaluation) — weak matches are dropped rather
 than returned, so "no relevant docs" is a real, distinct outcome the agent
 can report instead of stretching a bad match into an answer.
 
@@ -140,29 +141,62 @@ python -m devdesk.cli "what agents make up the Ares stack?"
 ### API keys you need
 
 - **`GOOGLE_API_KEY`** — a free [Google AI Studio](https://aistudio.google.com/apikey)
-  key. No GCP project or billing required for this phase; it drives both
-  the chat model (`gemini-2.5-flash` by default — see `context.md` for why
-  `gemini-3.8-flash` isn't the default yet) and the primary embedding
-  model (`gemini-embedding-001`). Without it, embeddings fall back to a
-  local offline MiniLM model automatically (chat still needs a key).
-- Nothing else is required to run this phase. Deployment (later) will add
-  a GCP project + Cloud Run + a switch to `GOOGLE_GENAI_USE_VERTEXAI=TRUE`
-  for Vertex AI — not needed yet.
-
-Without a key set, `pytest` still passes in full (all unit tests use a
-fake embedder / stub, no network calls); only the one `@pytest.mark.integration`
-test is skipped.
-
+  key. No GCP project or billing needed to run locally; it drives both
+  the chat model (`gemini-3.5-flash-lite` by default — chosen on free-tier
+  limits, see Evaluation) and the primary embedding model
+  (`gemini-embedding-001`). Without it, embeddings fall back to a local
+  MiniLM model if the `offline` extra is installed (chat still needs a
+  key).
 - **`LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY`** — optional. Create a
   "DevDesk" project in a self-hosted Langfuse instance (Settings → API
   Keys) if you want real trace viewing; leave unset and tracing is a
   no-op.
 
+Without a key set, `pytest` still passes in full (all unit tests use a
+fake embedder / stub, no network calls); only the one `@pytest.mark.integration`
+test is skipped.
+
+## Deployment
+
+`src/devdesk/server.py` serves the same runner over HTTP (`POST /ask`,
+`GET /healthz`) for containers:
+
+```bash
+python -m devdesk.rag.ingest     # the index is baked into the image
+docker compose up --build
+curl -s localhost:8080/ask -H 'content-type: application/json' \
+     -d '{"question": "What slash commands does the Ares REPL support?"}'
+```
+
+The image is python:3.12-slim with no torch (the MiniLM fallback is the
+optional `offline` extra), runs as a non-root user, and excludes `.env` —
+the key arrives at runtime. The server refuses to start without
+`GOOGLE_API_KEY`, since the baked index is Gemini-embedded and a MiniLM
+query against it would fail on the first request instead.
+
+Cloud Run config is in `deploy/` — `cloudrun_service.yaml` plus a
+step-by-step runbook in `deploy/iam_setup.md`. The shape is
+least-privilege:
+
+- a dedicated runtime service account with **no project roles**, only
+  `secretAccessor` on the one Secret Manager secret holding the Gemini key;
+- **no `allUsers` invoker** — Cloud Run IAM is the auth boundary, callers
+  need `roles/run.invoker` on the service and an identity token;
+- **`maxScale: 1`**, because `RateLimitPlugin` paces per process while
+  the free-tier quota is per project;
+- scale-to-zero, so idle cost stays at zero.
+
+Verified locally: the container image builds, answers a real question
+end to end (routed to `ares_agent`, fully cited, ~25s), rejects invalid
+input with 422, and refuses to start without a key. Not yet deployed to
+a live GCP project — that needs billing enabled.
+
 ## Status
 
-Phase 2 (agents, tools, RAG), Phase 3 (observability), Phase 4
-(hardening) and Phase 5 (eval harness) are built and verified — see
-`context.md` for the full build log. Not yet done: deployment.
+All seven build phases are done — scaffold, agents/tools/RAG,
+observability, hardening, eval harness, deployment config, and this
+README. See `context.md` for the full build log. Open items: the
+failures in the e2e eval (above), and a live Cloud Run deploy.
 
 ## Evaluation
 
@@ -229,9 +263,15 @@ src/devdesk/
   specialists/            # one LlmAgent per tenant
   tools/                  # search_docs, search_all_projects, git_status_lookup
   rag/                     # chunking, embeddings, vectorstore, ingest
-  cli.py                  # python -m devdesk.cli "question"
+  observability/          # structured logging + Langfuse plugins
+  hardening/              # rate limiting + graceful degradation plugins
   evaluation/             # eval scoring (pure) + runner
+  cli.py                  # python -m devdesk.cli "question"
+  server.py               # FastAPI: POST /ask, GET /healthz
 eval/queries.yaml          # hand-written eval set
 eval/run_eval.py           # python eval/run_eval.py --mode retrieval|e2e
+eval/results/              # committed baseline runs
+deploy/                    # Cloud Run service spec + IAM runbook
+Dockerfile, docker-compose.yml
 tests/                      # pytest, no network calls in the default run
 ```
