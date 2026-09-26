@@ -1,0 +1,17 @@
+# Secrets never enter the image — Cloud Run injects GOOGLE_API_KEY from
+# Secret Manager; docker-compose passes .env at runtime.
+.env
+.env.*
+!.env.example
+
+.git
+.venv
+venv
+logs
+eval/results
+**/__pycache__
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.serena
+*.egg-info

@@ -8,7 +8,11 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+# Source checkout by default; a non-editable install (the Docker image) lives
+# in site-packages, so it sets DEVDESK_HOME to where data/ and logs/ are.
+REPO_ROOT = Path(
+    os.environ.get("DEVDESK_HOME") or Path(__file__).resolve().parents[2]
+)
 load_dotenv(REPO_ROOT / ".env")
 
 CHROMA_DIR = REPO_ROOT / "data" / ".chroma"
