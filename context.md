@@ -56,9 +56,11 @@ repo's history once it's been in a merged PR.
 2. Agents + tools + minimal RAG (merged; `search_docs` needs a working
    vector store to mean anything, so these shipped together rather than
    RAG following as a separate phase) — done
-3. Observability
+3. Observability — done (structured JSON logging + Langfuse trace export,
+   both as ADK plugins)
 4. Production hardening (beyond the 429 retry + IPv4 fix already pulled
-   forward — see below)
+   forward — see below; also needs to fix the ungraceful-model-error gap
+   found in this phase, see Status)
 5. Eval harness scoring runner (2 seeded queries exist in
    `eval/queries.yaml`, harness itself not built yet)
 6. Deployment (Docker, Cloud Run config, least-privilege IAM)
@@ -90,6 +92,21 @@ repo's history once it's been in a merged PR.
 - `.env` is loaded via `python-dotenv` in `config.py`, not shell-sourced —
   useful if a key ever arrives as pasted/external content again, since
   shell-sourcing that is (correctly) blocked by the permission classifier.
+- **`gemini-3.8-flash`'s free tier is only 5 requests/minute** — far too
+  low for this router+specialist pattern (5+ model calls per question).
+  This was silently overriding the code default because the `.env` the
+  key arrived in had the old default baked in; `.env` isn't tracked by
+  git so this kind of drift from `.env.example` won't show up in a diff —
+  worth checking `.env` directly, not just `.env.example`, if a run
+  behaves like it's on a different model than expected.
+- **ADK constructs a fresh `CallbackContext` per callback invocation** —
+  `id(callback_context)` does not correlate a model call's
+  `before_model_callback`/`after_model_callback` pair. Every latency read
+  as exactly `0.0` until checked against a live run. Fixed in both
+  observability plugins with a per-`invocation_id` LIFO stack instead
+  (safe because one agent's model calls run strictly sequentially).
+  `ToolContext.function_call_id` doesn't have this problem — it's a real
+  per-call id.
 
 ## Status
 Repo rebuilt clean after the tenant-scope decision above. Git history is
@@ -109,5 +126,27 @@ and one manual live router→specialist round trip succeeded (before the
 rebuild, same code path — behavior is unchanged) showing correct
 delegation and citations.
 
-Not yet done: observability, full hardening, eval harness runner,
-deployment.
+**Phase 3 (observability) done, on branch `feat/observability`**:
+`StructuredLoggingPlugin` (JSON lines to stdout + `logs/devdesk.jsonl`)
+and `LangfuseTracingPlugin` (mirrors the same steps into a self-hosted
+Langfuse instance — no-op without keys), both as ADK `BasePlugin`
+subclasses wired into `cli.py`'s `InMemoryRunner(plugins=[...])`. 20 unit
+tests pass (6 new), lint clean. Verified against a real live run: latency
+correlation bug found and fixed (see Environment notes), structured logs
+correctly captured both a successful call and a real `503` error path end
+to end. Langfuse UI verification itself still pending — needs the user to
+create a "DevDesk" project at their self-hosted instance
+(`localhost:3000`) and hand over the key pair.
+
+**Real gap found during this phase's live testing, not yet fixed**: when
+a specialist's model call fails (e.g. the ongoing external 503
+flakiness), the exception propagates all the way up through the router's
+`AgentTool` call as an uncaught exception, killing the whole CLI
+invocation — there's no graceful degradation ("the Ares specialist is
+temporarily unavailable, try again") the way `search_docs`'s empty-hits
+path or `git_status_lookup`'s no-repo-configured path already handle
+gracefully for their own failure modes. This belongs in the hardening
+phase.
+
+Not yet done: full hardening (the gap above, plus rate limiting beyond
+the existing 429 retry), eval harness runner, deployment.

@@ -11,6 +11,8 @@ import sys
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
+from devdesk.observability.logging import StructuredLoggingPlugin
+from devdesk.observability.tracing import LangfuseTracingPlugin
 from devdesk.router_agent import root_agent
 
 _APP_NAME = "devdesk"
@@ -18,7 +20,11 @@ _USER_ID = "local"
 
 
 async def ask(question: str) -> str:
-    runner = InMemoryRunner(agent=root_agent, app_name=_APP_NAME)
+    runner = InMemoryRunner(
+        agent=root_agent,
+        app_name=_APP_NAME,
+        plugins=[StructuredLoggingPlugin(), LangfuseTracingPlugin()],
+    )
     session = await runner.session_service.create_session(
         app_name=_APP_NAME, user_id=_USER_ID
     )

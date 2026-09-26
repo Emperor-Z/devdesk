@@ -72,6 +72,33 @@ enforces a 0.35 cosine-similarity floor — weak matches are dropped rather
 than returned, so "no relevant docs" is a real, distinct outcome the agent
 can report instead of stretching a bad match into an answer.
 
+## Observability
+
+Two ADK plugins (`google.adk.plugins.base_plugin.BasePlugin`) are wired
+into every run via `InMemoryRunner(plugins=[...])` in `cli.py`, applying
+uniformly to the router and every specialist without touching agent code:
+
+- **`observability/logging.py` (`StructuredLoggingPlugin`)** — one JSON
+  line per step (run/model/tool start, end, error) to stdout and
+  `logs/devdesk.jsonl` (gitignored), each with `invocation_id`,
+  `agent_name`, and `latency_ms`.
+- **`observability/tracing.py` (`LangfuseTracingPlugin`)** — mirrors the
+  same steps into a self-hosted Langfuse instance as a trace with
+  span/generation children, so real trace viewing comes from existing
+  infra rather than a new stack. **No-op** without
+  `LANGFUSE_PUBLIC_KEY`/`LANGFUSE_SECRET_KEY` set — DevDesk works
+  identically with or without Langfuse configured.
+
+**Correlating before/after pairs**: ADK constructs a fresh
+`CallbackContext` object per callback invocation, so `id(callback_context)`
+does *not* identify the same model call across its `before_model_callback`
+and `after_model_callback` pair (this looked right in a naive first pass —
+every latency read as exactly `0.0` until caught against a live run).
+Model calls within one agent's turn run strictly sequentially, so both
+plugins key a LIFO stack by `invocation_id` instead.
+`ToolContext.function_call_id` is a real per-call identifier and doesn't
+have this problem.
+
 ## Setup
 
 Requires Python 3.12 (3.14 has had `chromadb`/dependency compatibility
@@ -105,11 +132,19 @@ Without a key set, `pytest` still passes in full (all unit tests use a
 fake embedder / stub, no network calls); only the one `@pytest.mark.integration`
 test is skipped.
 
+- **`LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY`** — optional. Create a
+  "DevDesk" project in a self-hosted Langfuse instance (Settings → API
+  Keys) if you want real trace viewing; leave unset and tracing is a
+  no-op.
+
 ## Status
 
-Phase 2 (agents, tools, RAG) is built and verified — see `context.md` for
-the full build log. Not yet done: observability, full production
-hardening, the eval harness scoring runner, and deployment.
+Phase 2 (agents, tools, RAG) and Phase 3 (observability) are built and
+verified — see `context.md` for the full build log. Not yet done: full
+production hardening (rate limiting; a specialist's model error currently
+propagates as an uncaught exception up through the router instead of
+degrading gracefully — see `context.md`), the eval harness scoring
+runner, and deployment.
 
 ## Repo layout
 

@@ -15,5 +15,6 @@ build/
 chroma_db/
 data/ingest/
 data/.chroma/
+logs/
 *.log
 .DS_Store
