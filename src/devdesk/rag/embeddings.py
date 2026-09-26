@@ -34,7 +34,13 @@ class MiniLMEmbedder:
     """Offline fallback: local sentence-transformers, no API key needed."""
 
     def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2") -> None:
-        from sentence_transformers import SentenceTransformer
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError as exc:
+            raise RuntimeError(
+                "No GOOGLE_API_KEY set and the offline embedder isn't installed: "
+                "set the key, or `pip install -e '.[offline]'`"
+            ) from exc
 
         self._model = SentenceTransformer(model_name)
 

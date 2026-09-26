@@ -128,7 +128,7 @@ issues at time of writing — see `context.md`).
 ```bash
 uv venv -p 3.12 .venv
 source .venv/bin/activate
-uv pip install -e ".[dev]"
+uv pip install -e ".[dev,offline]"   # drop `offline` if you always have GOOGLE_API_KEY
 
 cp .env.example .env
 # edit .env: set GOOGLE_API_KEY (see below)
