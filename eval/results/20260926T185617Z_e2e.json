@@ -1,0 +1,266 @@
+{
+  "mode": "e2e",
+  "model": "gemini-3.5-flash-lite",
+  "embedder": "gemini-embedding-001",
+  "min_query_similarity": 0.64,
+  "timestamp": "20260926T185617Z",
+  "summary": {
+    "n": 16,
+    "degraded": 0,
+    "pass_rate": 0.75,
+    "routing_accuracy": 0.857,
+    "citation_accuracy": 1.0,
+    "keyword_recall": 0.857,
+    "abstention_rate": 1.0,
+    "latency_p50_s": 30.61,
+    "latency_max_s": 47.21
+  },
+  "results": [
+    {
+      "id": "verisim-architecture",
+      "expected_agent": "verisim",
+      "answer": "VeriSim's high-level system architecture consists of several key layers and components (demo/ARCHITECTURE_AND_VALIDATION.md > VeriSim — Architecture, Traceability and Validation Evidence > 1. System architecture):\n\n1. **Clinician Interface (Frontend):** \n   - A human clinician interacts via a browser using free-text chat and structured test-menu actions (demo/ARCHITECTURE_AND_VALIDATION.md > VeriSim — Architecture, Traceability and Validation Evidence > 1. System architecture).\n   - Built on a PixiJS / AI Town fork (demo/ARCHITECTURE_AND_VALIDATION.md > VeriSim — Architecture, Traceability and Validation Evidence > 1. System architecture).\n\n2. **Multi-Agent Conversation Layer:**\n   - Consists of multiple AI agents with distinct personas, emotional states, and triggers (README.md > VeriSim 🏥):\n     - **Ray:** Patient with chest pain, who transitions from hostile to wary to calm (demo/ARCHITECTURE_AND_VALIDATION.md > VeriSim — Architecture, Traceability and Validation Evidence > 1. System architecture).\n     - **Kelly:** Anxious daughter who escalates or calms alongside Ray (demo/ARCHITECTURE_AND_VALIDATION.md > VeriSim — Architecture, Traceability and Validation Evidence > 1. System architecture).\n     - **Sam:** Professional nurse who expects a clear rationale (demo/ARCHITECTURE_AND_VALIDATION.md > VeriSim — Architecture, Traceability and Validation Evidence > 1. System architecture).\n\n3. **Deterministic Event Classifier (`eventClassifier.ts`):**\n   - Processes clinician utterances and classifies them into categories such as deescalation levers, plain explanations, escalation triggers, or neutral actions (demo/ARCHITECTURE_AND_VALIDATION.md > VeriSim — Architecture, Traceability and Validation Evidence > 1. System architecture).\n\n4. **Persisted Trust State & Consent Gate (`consentGate.ts` and Convex table `verisimTrustStates`):**\n   - Tracks trust metrics, simulation stages, de-escalations, plain explanations, refusals, and self-discharge status (demo/ARCHITECTURE_AND_VALIDATION.md > VeriSim — Architecture, Traceability and Validation Evidence > 1. System architecture).\n   - Enforces consent conditions per test category (observation, invasive, medication) before clinical tests can be unlocked and ordered (demo/ARCHITECTURE_AND_VALIDATION.md > VeriSim — Architecture, Traceability and Validation Evidence > 1. System architecture). Server-side rechecks via Convex mutations ensure client states are never blindly trusted (demo/ARCHITECTURE_AND_VALIDATION.md > VeriSim — Architecture, Traceability and Validation Evidence > 1. System architecture).\n\n5. **Clinical Results & Audit Trail:**\n   - Canned clinical results (`testResults.ts`) are inserted into the conversation when tests are successfully dispatched (demo/ARCHITECTURE_AND_VALIDATION.md > VeriSim — Architecture, Traceability and Validation Evidence > 1. System architecture).\n   - Every utterance and test dispatch is logged to `verisimSessionEvents` to serve as a research audit and debrief trail (demo/ARCHITECTURE_AND_VALIDATION.md > VeriSim — Architecture, Traceability and Validation Evidence > 1. System architecture).",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 33.13,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    },
+    {
+      "id": "verisim-consent-gate",
+      "expected_agent": "verisim",
+      "answer": "In the \"Chest Pain, A&E Bay 3\" scenario, clinical actions like ordering an ECG are subject to a consent-gate rule (docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > Consent-gate rule (core mechanic)). \n\nIf you order an ECG before Ray trusts you:\n* Ray will refuse the test in character (e.g., initially refusing tests and stating \"I'm not staying\") (docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > PATIENT — Raymond \"Ray\" Turner).\n* It triggers a **trust penalty**. Pushing ahead without repairing trust can cause Ray to self-discharge, which results in a scenario fail state (docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > Consent-gate rule (core mechanic)).\n* Receiving **two refusals** while Ray is hostile will immediately end the scenario (README.md > VeriSim 🏥 > Scenario: \"Chest Pain, A&E Bay 3\" > The consent-gate mechanic).\n\nTo successfully proceed, you must first earn his trust using de-escalation levers and by explaining clearly in plain language why the ECG matters to him (README.md > VeriSim 🏥 > Scenario: \"Chest Pain, A&E Bay 3\" > The consent-gate mechanic, docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > PATIENT — Raymond \"Ray\" Turner).",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 29.11,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    },
+    {
+      "id": "verisim-nurse",
+      "expected_agent": "verisim",
+      "answer": "In the \"Chest Pain, A&E Bay 3\" scenario, the nurse character is **Sam Okafor**, a 34-year-old A&E staff nurse with 8 years of experience who is competent, calm, and stretched across four bays (docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > NURSE — Sam Okafor). \n\nHis behavior is characterized by the following:\n- **General Style:** Professional, direct, and quietly protective of patients with no time for vagueness (docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > NURSE — Sam Okafor).\n- **Execution of Orders:** He promptly executes clear, specific instructions (e.g., executing \"bloods and a 12-lead\" immediately) (docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > NURSE — Sam Okafor).\n- **Pushback:** He pushes back on vague or unsafe orders (e.g., asking, \"what am I sending the bloods for exactly?\") (docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > NURSE — Sam Okafor).\n- **Deterioration Flagging:** He flags patient deterioration (\"his sats are dropping, doctor\") and will prompt the player if the patient is deteriorating and nothing is being done (docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > NURSE — Sam Okafor).\n- **Escalation Triggers:** He is triggered by being given orders without rationale or if the player ignores a flagged observation twice (docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > NURSE — Sam Okafor).\n- **Support Levers:** Clear SBAR-style communication earns proactive help from him, such as suggesting analgesia timing or chasing results faster (docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > NURSE — Sam Okafor).\n- **Knowledge Boundary:** He has full nursing competence, will not diagnose, but will hint through observations (docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > NURSE — Sam Okafor).\n- **Voice:** Economical, using brief lines like *\"On it.\"* or *\"Doctor — a word?\"* (docs/persona_cards.md > VeriSim Persona Cards — Scenario 01: \"Chest Pain, A&E Bay 3\" > NURSE — Sam Okafor).",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 31.11,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    },
+    {
+      "id": "verisim-finding-3",
+      "expected_agent": "verisim",
+      "answer": "Finding 3 was resolved by rewriting all three completion paths in `convex/agent/conversation.ts` to be chat-native, implementing **option 1** alongside **option 3** as a safety net (verisim: docs/build_notes.md > VeriSim Build Notes & Findings > Findings (model selection on RAM-constrained CPU box) > Finding 3 — RESOLVED (21 July 2026): option 1 implemented (+ option 3 as a safety net)):\n\n- **Rewrote prompts to be chat-native**: Dropped the trailing `\"<Speaker> to <Other>:\"` scaffold and added an explicit `replyInstruction`: *\"Reply with ONLY what <Speaker> says next, first person, no name prefix…\"*.\n- **Role-tagged history (`previousMessages`)**: Instead of a single `user` blob with `\"Author to Recipient:\"` prefixes, the history was role-tagged so the speaker's own past lines are marked as `assistant` and the other party's as `user`.\n- **Replaced name-based stop words**: Replaced the name-based `stopWords` (which were causing empty outputs) with `turnStops`, which only trigger on a **newline-prefixed** new label (`\\n<Name>:`), preventing a label from ever matching at offset 0.\n- **Added a defensive safety net**: Kept a defensive `stripSpeakerPrefix` (option 3) to handle any residual leading labels.",
+      "router_tool_calls": [
+        "search_all_projects"
+      ],
+      "latency_s": 14.06,
+      "degraded": false,
+      "routing_correct": false,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": false
+    },
+    {
+      "id": "verisim-kaggle",
+      "expected_agent": "verisim",
+      "answer": "To run VeriSim's LLM on a Kaggle GPU (allowing Ollama to execute on a free cloud GPU and tunnel its requests back to your local VeriSim instance), follow these steps as outlined in `docs/kaggle_gpu_setup.md`:\n\n### 1. Set Up Your Kaggle Notebook\n* **Prerequisites:** Ensure your Kaggle account is phone-verified (required to unlock GPU and Internet access) [(docs/kaggle_gpu_setup.md > Running VeriSim's LLM on Kaggle GPU (or Colab) > Kaggle (recommended — 16 GB T4/P100, ~30h/week))].\n* Create a new notebook on Kaggle (`kaggle.com` → **Create** → **New Notebook**) [(docs/kaggle_gpu_setup.md > Running VeriSim's LLM on Kaggle GPU (or Colab) > Kaggle (recommended — 16 GB T4/P100, ~30h/week))].\n* In the right-hand settings panel, set **Accelerator** to **GPU T4 x2** (or P100) and **Internet** to **On** [(docs/kaggle_gpu_setup.md > Running VeriSim's LLM on Kaggle GPU (or Colab) > Kaggle (recommended — 16 GB T4/P100, ~30h/week))].\n\n---\n\n### 2. Run the Notebook Cells\nPaste and run the following blocks sequentially in your notebook cells:\n\n* **Cell 1: Install prerequisites & Ollama** *(Kaggle's base image requires `zstd` to unpack the Ollama install script)* [(docs/kaggle_gpu_setup.md > Running VeriSim's LLM on Kaggle GPU (or Colab) > Kaggle (recommended — 16 GB T4/P100, ~30h/week))]\n  ```bash\n  !apt-get update && apt-get install -y zstd\n  !curl -fsSL https://ollama.com/install.sh | sh\n  ```\n\n* **Cell 2: Start Ollama in the background & pull the model**\n  ```python\n  import subprocess\n  import time\n\n  # Start ollama server in background\n  server = subprocess.Popen([\"ollama\", \"serve\"])\n  time.sleep(5)  # give it a moment to boot\n\n  # Pull the instruct model\n  !ollama pull qwen2.5:14b-instruct-q4_K_M\n  ```\n  *(Note: `llama3.1:8b-instruct-q4_K_M` has also been validated on Kaggle T4/P100 GPUs) [(docs/build_notes.md > VeriSim Build Notes & Findings > GPU validation — Kaggle T4/P100, llama3.1:8b-instruct-q4_K_M (24 July 2026))].*\n\n* **Cell 3: Expose via a Cloudflare Quick Tunnel**\n  Download `cloudflared` and expose port `11434` publicly so your local environment can reach it:\n  ```bash\n  !curl -L --output cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64\n  !chmod +x cloudflared\n  !./cloudflared tunnel --url http://localhost:11434\n  ```\n  Look at the output logs for the generated `trycloudflare.com` URL (e.g., `https://xxxx.trycloudflare.com`) [(docs/kaggle_gpu_setup.md > Running VeriSim's LLM on Kaggle GPU (or Colab) > Kaggle (recommended — 16 GB T4/P100, ~30h/week))].\n\n---\n\n### 3. Configure Your Local VeriSim Backend\nOn your local machine where VeriSim runs, update your environment variables to point to the Kaggle tunnel URL and model:\n```bash\nconvex env set OLLAMA_HOST https://xxxx.trycloudflare.com\nconvex env set OLLAMA_MODEL qwen2.5:14b-instruct-q4_K_M\n```\n*(or `llama3.1:8b-instruct-q4_K_M` if you pulled that instead) [(docs/build_notes.md > VeriSim Build Notes & Findings > GPU validation — Kaggle T4/P100, llama3.1:8b-instruct-q4_K_M (24 July 2026))].*\n\n### Important Caveats\n* **Ephemeral URL:** The Cloudflare tunnel URL changes every time the notebook restarts, and Kaggle sessions cap around 12 hours (with weekly usage limits), making this approach ideal for development, demos, or testing rather than production deployment [(docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log))].",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 47.21,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    },
+    {
+      "id": "verisim-engine-step",
+      "expected_agent": "verisim",
+      "answer": "Based on the VeriSim (BayTrainer) architecture documentation, the game engine loads and saves the world state during each simulation step through the following process:\n\n1. **Loading State:** At the beginning of a step, the game state is loaded into memory (ARCHITECTURE.md > Architecture > Game engine (`convex/engine`) > Running the simulation). The framework instantiates game objects using their constructors (e.g., `new Player(serializedPlayer)`), which parses the database representation into in-memory classes (ARCHITECTURE.md > Architecture > Game engine (`convex/engine`) > Engine state management).\n2. **Running Simulation:** The engine runs the simulation forward by executing many high-frequency ticks for the time interval—alternating between handling inputs and advancing simulation logic (ARCHITECTURE.md > Architecture > Game engine (`convex/engine`) > Running the simulation) and modifying the in-memory game objects (ARCHITECTURE.md > Architecture > Game engine (`convex/engine`) > Engine state management).\n3. **Saving State:** At the end of a step, the framework calls `Game.saveStep`, which computes a diff of the game state since the beginning of the step and passes it to the `convex/aiTown/game.ts:saveWorld` mutation (ARCHITECTURE.md > Architecture > Game engine (`convex/engine`) > Engine state management).\n4. **Applying Changes:** The `saveWorld` mutation applies the diff to the database, handles any archived deleted objects, updates the `participatedTogether` graph, and triggers any scheduled jobs (ARCHITECTURE.md > Architecture > Game engine (`convex/engine`) > Engine state management).",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 28.12,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [
+        "runStep"
+      ],
+      "abstained": null,
+      "passed": false
+    },
+    {
+      "id": "verisim-fly-scaling",
+      "expected_agent": "verisim",
+      "answer": "No, you cannot scale the self-hosted Convex backend on Fly.io to more than one machine because it is stateful (verisim: fly/README.md > Hosting AI Town on Fly.io > Self-hosting Convex on Fly.io).",
+      "router_tool_calls": [
+        "ares_agent",
+        "search_all_projects"
+      ],
+      "latency_s": 36.65,
+      "degraded": false,
+      "routing_correct": false,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": false
+    },
+    {
+      "id": "ares-agents",
+      "expected_agent": "ares",
+      "answer": "The Ares stack comprises the following agents:\n- orchestrator agent (devdesk_ares: README.md > Ares > Architecture)\n- coder agent (devdesk_ares: README.md > Ares > Architecture)\n- thinker agent (devdesk_ares: README.md > Ares > Architecture)\n- runner agent (devdesk_ares: README.md > Ares > Architecture)\n- Serena/code-navigation agent (devdesk_ares: README.md > Ares > Architecture)\n\nThey talk to each other and communicate via A2A HTTP services (`:8100-:8104`), managed by `AresSystem` which routes prompts through the orchestrator agent or via direct agent commands from the terminal REPL (devdesk_ares: README.md > Ares > What It Does, devdesk_ares: README.md > Ares > Architecture).",
+      "router_tool_calls": [
+        "ares_agent"
+      ],
+      "latency_s": 37.65,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    },
+    {
+      "id": "ares-memory",
+      "expected_agent": "ares",
+      "answer": "Ares extracts and stores long-term memories between sessions using the following mechanism:\n\n* **Extraction:** After each reply, the exchange is handed off in the background to a small local model (`qwen2.5-coder:3b` by default) which extracts facts worth keeping (such as projects, tools, hardware, preferences, and deadlines) (README.md > Ares > Memory).\n* **Storage:** Everything is stored locally in `~/.ares/memory` (utilizing `mem0` with its telemetry switched off) (README.md > Ares > Memory). \n* **Recall:** With the `memory` extra installed, Ares automatically recalls related memories prior to each prompt and adds them to the context (README.md > Ares > Memory). You can also manually add important details using `/remember` (README.md > Ares > Memory), or disable the feature entirely by setting `ARES_MEMORY=0` (README.md > Ares > Memory).",
+      "router_tool_calls": [
+        "ares_agent"
+      ],
+      "latency_s": 30.11,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    },
+    {
+      "id": "ares-commands",
+      "expected_agent": "ares",
+      "answer": "The Ares REPL supports the following slash commands:\n\n* `/coder <task>`: code-focused task execution (README.md > Ares > Commands)\n* `/thinker <task>`: deeper reasoning or planning (README.md > Ares > Commands)\n* `/runner <task>`: quick execution-oriented task (README.md > Ares > Commands)\n* `/serena <task>`: codebase-aware navigation and edits (README.md > Ares > Commands)\n* `/learn`: run the learning cycle (README.md > Ares > Commands)\n* `/remember <fact>`: store a fact verbatim (README.md > Ares > Commands)\n* `/memories`: list what Ares remembers (README.md > Ares > Commands)\n* `/forget`: delete all memories (asks first) (README.md > Ares > Commands)\n* `/quit`: exit the REPL (README.md > Ares > Commands)",
+      "router_tool_calls": [
+        "ares_agent"
+      ],
+      "latency_s": 29.61,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    },
+    {
+      "id": "ares-hardware-profiles",
+      "expected_agent": "ares",
+      "answer": "The plan for hardware-aware model profiles in Ares (outlined in the Phase 2 Intelligence Layer of the Ares Independence Plan) includes the following components:\n\n* **Hardware Detection:** Add `ares/runtime/hardware.py` to detect GPU VRAM (via `nvidia-smi`/`rocm-smi`) and total system RAM at startup (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Hardware-aware model profiles).\n* **Built-in Profiles:**\n  * **Low** ($\\le 8\\text{ GB}$ RAM, no GPU): Uses `qwen2.5-coder:1.5b` for all agents (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Hardware-aware model profiles).\n  * **Mid** ($16\\text{ GB}$ RAM or $8\\text{ GB}$ VRAM): Uses current defaults (FLUX, FORGE, RUNE, SWIFT) (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Hardware-aware model profiles).\n  * **High** ($32\\text{ GB}+$ RAM or $16\\text{ GB}+$ VRAM): Uses `qwen3:14b`, `qwen2.5-coder:32b`, and `deepseek-r1:32b` (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Hardware-aware model profiles).\n* **Auto-selection & Overrides:** Automatically select the profile at startup and print the detected hardware and selected profile. Environment variable overrides (`ARES_*_MODEL`) will always take precedence over auto-selection, and setting `ARES_HARDWARE_PROFILE=low|mid|high` allows forcing a profile manually (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Hardware-aware model profiles).",
+      "router_tool_calls": [
+        "ares_agent"
+      ],
+      "latency_s": 30.61,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    },
+    {
+      "id": "ares-next-steps",
+      "expected_agent": "ares",
+      "answer": "According to the Ares independence plan, the roadmap moves from an initial compatibility/facade layer toward native Ares replacements (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Summary):\n\n- **Phase 3 (Next major steps):** Replace each runtime adapter with native Ares implementations, starting with low-risk pieces such as events, types, tools, and the Ollama engine (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Assumptions).\n- **A2A Streaming:** Implement A2A streaming (SSE / `tasks/sendSubscribe` WebSocket), which is a known gap not addressed in the earlier phases (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Assumptions).",
+      "router_tool_calls": [
+        "ares_agent"
+      ],
+      "latency_s": 44.17,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [
+        "ares/runtime"
+      ],
+      "abstained": null,
+      "passed": false
+    },
+    {
+      "id": "ares-voyager",
+      "expected_agent": "ares",
+      "answer": "According to the Ares independence plan, the Voyager-style skill library in Ares will work as follows:\n\n* **Extraction:** After a successful coding, shell, or refactor workflow, the system extracts the solution pattern as a named skill consisting of a description and a code/command template *(ares: docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Voyager skill library)*.\n* **Storage:** Skills are stored locally in a SQLite table located at `~/.ares/skills.db` *(ares: docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Voyager skill library)*.\n* **Retrieval & Routing:** Before routing a task, the system retrieves the top-$k$ similar skills using embedding similarity and surfaces them to the orchestrator as hints *(ares: docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Voyager skill library)*.\n* **Integration:** It pairs with and extends the existing `learning.py` / `/learn` command, and is backed by the Ares learning orchestrator (`ares/runtime/learning.py`) alongside mem0 *(ares: docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Voyager skill library)*, *(ares: docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 3: Native Ares implementations (cut OpenJarvis fully))*.",
+      "router_tool_calls": [
+        "ares_agent",
+        "search_all_projects"
+      ],
+      "latency_s": 38.17,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    },
+    {
+      "id": "cross-ollama",
+      "expected_agent": "cross",
+      "answer": "Both of your projects (**Ares** and **VeriSim**) run local models through Ollama:\n\n1. **Ares** (Local Multi-Agent Stack):\n   - Ares relies entirely on a local Ollama backend for its intelligence layer, utilizing an Ollama adapter/engine to run its agents (such as coder, thinker, runner, serena, and orchestrator) locally on-device. \n   *(See `(ares: docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only))` and `(.serena/memories/project/ares_overview.md > Ares project overview)`)*\n\n2. **VeriSim** (Simulation-Training Project):\n   - VeriSim supports running local models via Ollama (configured with defaults like `qwen2.5-coder:3b` and `nomic-embed-text`, or pulling models like `llama3.1:8b-instruct-q4_K_M`), and includes setup guides for running its LLM stack locally or on Kaggle/Colab GPUs using Ollama.\n   *(See `(verisim: docs/build_notes.md > VeriSim Build Notes & Findings > Config touched (vs upstream AI Town))` and `(verisim: docs/kaggle_gpu_setup.md > Running VeriSim's LLM on Kaggle GPU (or Colab) > Kaggle (recommended — 16 GB T4/P100, ~30h/week) > Cell 2 — pull a model (T4 16GB handles these at q4))`)*",
+      "router_tool_calls": [
+        "search_all_projects"
+      ],
+      "latency_s": 15.57,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    },
+    {
+      "id": "none-kubernetes",
+      "expected_agent": "none",
+      "answer": "I searched all project documents for information regarding the Kubernetes autoscaler and the billing service, but nothing relevant was found.",
+      "router_tool_calls": [
+        "search_all_projects",
+        "search_all_projects",
+        "search_all_projects"
+      ],
+      "latency_s": 28.62,
+      "degraded": false,
+      "routing_correct": null,
+      "cited_expected_source": null,
+      "missing_keywords": [],
+      "abstained": true,
+      "passed": true
+    },
+    {
+      "id": "none-sourdough",
+      "expected_agent": "none",
+      "answer": "That question doesn't seem to be about the VeriSim/BayTrainer simulation project or the Ares local agent stack. \n\nSourdough bread hydration typically refers to the ratio of water to flour by weight (e.g., 70% hydration means 70 grams of water for every 100 grams of flour). For most beginner-friendly sourdough loaves, a hydration ratio between **65% and 75%** is generally considered a good starting point because it's manageable to shape and handle while still yielding an open crumb and a crisp crust. Experienced bakers often push hydration to 80% or higher, while drier doughs (around 60%) are easier to work with if you're just starting out.\n\nIf you have any questions about the Ares multi-agent stack or the VeriSim/BayTrainer simulation-training project, feel free to ask!",
+      "router_tool_calls": [],
+      "latency_s": 8.03,
+      "degraded": false,
+      "routing_correct": null,
+      "cited_expected_source": null,
+      "missing_keywords": [],
+      "abstained": true,
+      "passed": true
+    }
+  ]
+}
