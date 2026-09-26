@@ -73,3 +73,49 @@ def test_chunk_id_is_stable_and_content_sensitive():
     c2 = Chunk(text="hello world", header_path="A", index=0)
     assert chunk_id("p", "f.md", c1) == chunk_id("p", "f.md", c1)
     assert chunk_id("p", "f.md", c1) != chunk_id("p", "f.md", c2)
+
+
+def test_prune_source_files_drops_deleted_files_only(fake_embedder, tmp_path):
+    store = _vs(fake_embedder, tmp_path)
+    store.upsert_source_file("proj", "coll", "keep.md", [Chunk(text="kept", header_path="A", index=0)])
+    store.upsert_source_file("proj", "coll", "gone.md", [Chunk(text="gone", header_path="A", index=0)])
+
+    removed = store.prune_source_files("coll", keep={"keep.md"})
+
+    assert removed == ["gone.md"]
+    assert store._collection("coll").get()["documents"] == ["kept"]
+
+
+def test_ingest_skips_tool_cache_dirs_and_prunes_them(fake_embedder, tmp_path):
+    from devdesk.config import ProjectConfig
+    from devdesk.rag import ingest
+
+    src = tmp_path / "src"
+    (src / "docs").mkdir(parents=True)
+    (src / "docs" / "real.md").write_text("# Real\n\nActual project docs.")
+    (src / ".pytest_cache").mkdir()
+    (src / ".pytest_cache" / "README.md").write_text("# pytest cache directory #")
+
+    store = VectorStore(persist_dir=str(tmp_path / "chroma"), embedder=fake_embedder)
+    # Simulate an index built before the cache dir was skipped.
+    store.upsert_source_file(
+        "proj", "coll", ".pytest_cache/README.md", [Chunk(text="cache", header_path="x", index=0)]
+    )
+
+    n = ingest.ingest_project(ProjectConfig("proj", src, "coll"), store)
+
+    assert n == 1
+    sources = {m["source_file"] for m in store._collection("coll").get()["metadatas"]}
+    assert sources == {"docs/real.md"}
+
+
+def test_min_query_similarity_is_backend_specific_and_overridable(monkeypatch):
+    from devdesk import config
+
+    monkeypatch.delenv("MIN_QUERY_SIMILARITY", raising=False)
+    monkeypatch.setattr(config, "GOOGLE_API_KEY", "k")
+    assert config.min_query_similarity() == 0.64
+    monkeypatch.setattr(config, "GOOGLE_API_KEY", "")
+    assert config.min_query_similarity() == 0.35
+    monkeypatch.setenv("MIN_QUERY_SIMILARITY", "0.5")
+    assert config.min_query_similarity() == 0.5
