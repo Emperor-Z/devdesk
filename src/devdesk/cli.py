@@ -54,13 +54,20 @@ async def run_question(runner: InMemoryRunner, question: str) -> RunResult:
     message = types.Content(role="user", parts=[types.Part(text=question)])
 
     result = RunResult(answer="")
-    async for event in runner.run_async(
-        user_id=_USER_ID, session_id=session.id, new_message=message
-    ):
-        if event.author == root_agent.name:
-            result.router_tool_calls.extend(c.name for c in event.get_function_calls())
-        if event.is_final_response() and event.content and event.content.parts:
-            result.answer = "".join(p.text or "" for p in event.content.parts)
+    try:
+        async for event in runner.run_async(
+            user_id=_USER_ID, session_id=session.id, new_message=message
+        ):
+            if event.author == root_agent.name:
+                result.router_tool_calls.extend(c.name for c in event.get_function_calls())
+            if event.is_final_response() and event.content and event.content.parts:
+                result.answer = "".join(p.text or "" for p in event.content.parts)
+    finally:
+        # Questions are one-shot; without this a long-running server (or a
+        # big eval batch) accumulates every session in memory forever.
+        await runner.session_service.delete_session(
+            app_name=_APP_NAME, user_id=_USER_ID, session_id=session.id
+        )
     return result
 
 
