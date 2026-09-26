@@ -1,11 +1,111 @@
-# Seeded smoke-test queries. The full eval harness (scoring/runner) lands
-# in a later phase; this file just stops that phase starting from zero.
-# expected_source_file is relative to the project's source_path.
+# DevDesk eval set. Every expectation below was written by reading the
+# indexed docs directly — nothing here is model-generated.
+#
+# Fields:
+#   id                 stable key, used in result files and --ids filtering
+#   question           asked verbatim
+#   expected_agent     verisim | ares   -> router should call only that specialist
+#                      cross            -> router should use search_all_projects
+#                                          (or call every specialist)
+#                      none             -> out of scope; routing isn't scored,
+#                                          the answer must abstain (no citations)
+#   expected_sources   source files (relative to the tenant's source_path) that
+#                      count as a correct retrieval / citation; any one suffices
+#   expected_keywords  case-insensitive strings a grounded answer must contain
+#                      (end-to-end mode only); all must appear
 
-- question: "What agents make up the Ares stack and how do they talk to each other?"
-  expected_agent: ares
-  expected_source_file: README.md
-
-- question: "What is VeriSim's high-level architecture?"
+- id: verisim-architecture
+  question: "What is VeriSim's high-level architecture?"
   expected_agent: verisim
-  expected_source_file: ARCHITECTURE.md
+  expected_sources: [ARCHITECTURE.md, demo/ARCHITECTURE_AND_VALIDATION.md]
+  expected_keywords: [convex]
+
+- id: verisim-consent-gate
+  question: "What happens in the chest pain scenario if the player orders an ECG before the patient trusts them?"
+  expected_agent: verisim
+  expected_sources: [docs/persona_cards.md, docs/consent_gate.md, README.md]
+  expected_keywords: [trust, refus]
+
+- id: verisim-nurse
+  question: "How does the nurse character in the A&E Bay 3 scenario behave?"
+  expected_agent: verisim
+  expected_sources: [docs/persona_cards.md]
+  expected_keywords: [Sam Okafor]
+
+- id: verisim-finding-3
+  question: "How was Finding 3 about the conversation completion paths resolved?"
+  expected_agent: verisim
+  expected_sources: [docs/build_notes.md]
+  expected_keywords: [conversation.ts]
+
+- id: verisim-kaggle
+  question: "How do I run VeriSim's LLM on a Kaggle GPU?"
+  expected_agent: verisim
+  expected_sources: [docs/kaggle_gpu_setup.md]
+  expected_keywords: [ollama]
+
+- id: verisim-engine-step
+  question: "How does VeriSim's game engine load and save world state on each simulation step?"
+  expected_agent: verisim
+  expected_sources: [ARCHITECTURE.md]
+  expected_keywords: [runStep]
+
+- id: verisim-fly-scaling
+  question: "Can the self-hosted Convex backend on Fly.io be scaled to more than one machine?"
+  expected_agent: verisim
+  expected_sources: [fly/README.md]
+  expected_keywords: [stateful]
+
+- id: ares-agents
+  question: "What agents make up the Ares stack and how do they talk to each other?"
+  expected_agent: ares
+  expected_sources: [README.md, .serena/memories/project/ares_overview.md]
+  expected_keywords: []
+
+- id: ares-memory
+  question: "How does Ares extract and store long-term memories between sessions?"
+  expected_agent: ares
+  expected_sources: [README.md]
+  expected_keywords: [qwen2.5-coder:3b]
+
+- id: ares-commands
+  question: "What slash commands does the Ares REPL support?"
+  expected_agent: ares
+  expected_sources: [README.md]
+  expected_keywords: [/remember]
+
+- id: ares-hardware-profiles
+  question: "What's the plan for hardware-aware model profiles in Ares?"
+  expected_agent: ares
+  expected_sources: [docs/ares-independence-plan.md]
+  expected_keywords: [hardware.py]
+
+- id: ares-next-steps
+  question: "What's next on the Ares independence plan from OpenJarvis?"
+  expected_agent: ares
+  expected_sources: [docs/ares-independence-plan.md]
+  expected_keywords: [ares/runtime]
+
+- id: ares-voyager
+  question: "How will the Voyager-style skill library work in Ares?"
+  expected_agent: ares
+  expected_sources: [docs/ares-independence-plan.md]
+  expected_keywords: [skills.db]
+
+- id: cross-ollama
+  question: "Which of my projects run local models through Ollama?"
+  expected_agent: cross
+  expected_sources: [docs/kaggle_gpu_setup.md, docs/ares-independence-plan.md, README.md]
+  expected_keywords: [verisim, ares]
+
+- id: none-kubernetes
+  question: "How does the Kubernetes autoscaler decide when to add pods for the billing service?"
+  expected_agent: none
+  expected_sources: []
+  expected_keywords: []
+
+- id: none-sourdough
+  question: "What's a good hydration ratio for sourdough bread?"
+  expected_agent: none
+  expected_sources: []
+  expected_keywords: []

@@ -34,3 +34,10 @@ class FakeEmbedder:
 @pytest.fixture
 def fake_embedder() -> FakeEmbedder:
     return FakeEmbedder()
+
+
+@pytest.fixture(autouse=True)
+def _pin_similarity_cutoff(monkeypatch):
+    """The default cutoff depends on which embedding backend .env selects;
+    unit tests use FakeEmbedder regardless, so pin the cutoff it's tuned for."""
+    monkeypatch.setenv("MIN_QUERY_SIMILARITY", "0.35")

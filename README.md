@@ -160,9 +160,35 @@ test is skipped.
 
 ## Status
 
-Phase 2 (agents, tools, RAG), Phase 3 (observability), and Phase 4
-(hardening) are built and verified — see `context.md` for the full build
-log. Not yet done: the eval harness scoring runner, and deployment.
+Phase 2 (agents, tools, RAG), Phase 3 (observability), Phase 4
+(hardening) and Phase 5 (eval harness) are built and verified — see
+`context.md` for the full build log. Not yet done: deployment.
+
+## Evaluation
+
+```bash
+python eval/run_eval.py --mode retrieval   # 1 embedding call/query, no chat model
+python eval/run_eval.py --mode e2e         # full router -> specialist loop
+python eval/run_eval.py --mode e2e --ids ares-memory none-sourdough --fail-under 1.0
+```
+
+16 hand-written queries (`eval/queries.yaml`): 7 VeriSim, 6 Ares, 1
+cross-project, 2 out-of-scope. Scoring is deterministic — no LLM judge:
+
+- **retrieval**: hit@k, hit@1, MRR against the expected source files, and
+  whether out-of-scope queries are rejected by the similarity cutoff.
+- **e2e**: routing accuracy (right specialist, no detour), citation of an
+  expected source, required keywords, abstention on out-of-scope queries,
+  latency. Answers replaced by the graceful-degradation fallback (free-tier
+  503s) are counted as `degraded` and excluded from quality rates.
+
+Latest retrieval run (gemini-embedding-001): hit@k **1.0**, hit@1 **0.79**,
+MRR **0.89**, out-of-scope rejected **2/2**. The first run caught a real
+bug: the 0.35 similarity cutoff (tuned for MiniLM) let everything through
+under Gemini embeddings, whose similarity floor is ~0.5 — a sourdough
+question scored 0.51 against the VeriSim docs. Measured relevant hits
+bottom out at 0.661 and out-of-scope at 0.621, so the Gemini cutoff is now
+0.64, chosen per backend in `config.min_query_similarity()`.
 
 ## Repo layout
 
@@ -173,6 +199,8 @@ src/devdesk/
   tools/                  # search_docs, search_all_projects, git_status_lookup
   rag/                     # chunking, embeddings, vectorstore, ingest
   cli.py                  # python -m devdesk.cli "question"
-eval/queries.yaml          # seeded smoke queries, grows into the eval harness
+  evaluation/             # eval scoring (pure) + runner
+eval/queries.yaml          # hand-written eval set
+eval/run_eval.py           # python eval/run_eval.py --mode retrieval|e2e
 tests/                      # pytest, no network calls in the default run
 ```

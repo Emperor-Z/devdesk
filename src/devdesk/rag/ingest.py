@@ -15,7 +15,17 @@ from devdesk.rag.chunking import chunk_markdown
 from devdesk.rag.vectorstore import VectorStore
 
 _DOC_GLOBS = ("*.md", "*.MD")
-_SKIP_DIRS = {".git", "node_modules", ".venv", "__pycache__", ".chroma"}
+_SKIP_DIRS = {
+    ".git",
+    "node_modules",
+    ".venv",
+    "__pycache__",
+    ".chroma",
+    # Tool caches ship their own boilerplate README.md — not project docs.
+    ".pytest_cache",
+    ".ruff_cache",
+    ".mypy_cache",
+}
 
 # One embed_content call per file; free-tier Gemini embedding quota has
 # been hit in practice well under its documented per-minute ceiling, so
@@ -35,13 +45,15 @@ def ingest_project(project: ProjectConfig, store: VectorStore | None = None) -> 
     """Chunk + embed + upsert every markdown doc for one project.
 
     Returns the number of source files ingested. Idempotent: re-running
-    after edits upserts changed chunks and drops stale ones per file.
+    after edits upserts changed chunks, drops stale ones per file, and
+    removes files that no longer exist.
     """
     if project.source_path is None:
         return 0
 
     store = store or VectorStore()
     count = 0
+    ingested: list[str] = []
     for path in _iter_doc_files(project.source_path):
         if count > 0:
             time.sleep(_SECONDS_BETWEEN_FILES)
@@ -49,7 +61,11 @@ def ingest_project(project: ProjectConfig, store: VectorStore | None = None) -> 
         chunks = chunk_markdown(text)
         source_file = str(path.relative_to(project.source_path))
         store.upsert_source_file(project.name, project.collection_name, source_file, chunks)
+        ingested.append(source_file)
         count += 1
+    # Per-file upsert only cleans stale chunks inside files that still exist;
+    # this drops files that were deleted (or newly skipped) since last run.
+    store.prune_source_files(project.collection_name, keep=set(ingested))
     return count
 
 

@@ -2,7 +2,8 @@
 
 Idempotent ingestion: chunk IDs are content hashes, so re-running ingest
 after a doc edit upserts only the changed chunks and deletes ones that no
-longer exist for that source file — no `force` flag, no stale data.
+longer exist for that source file, and `prune_source_files` drops files
+that were deleted outright — no `force` flag, no stale data.
 """
 
 from __future__ import annotations
@@ -74,13 +75,31 @@ class VectorStore:
         if stale_ids:
             collection.delete(ids=list(stale_ids))
 
+    def prune_source_files(self, collection_name: str, keep: set[str]) -> list[str]:
+        """Delete every chunk whose source_file isn't in `keep`; returns the
+        removed source files."""
+        collection = self._collection(collection_name)
+        existing = collection.get(include=["metadatas"])
+        stale_ids: list[str] = []
+        removed: set[str] = set()
+        for chunk_id_, meta in zip(existing.get("ids", []), existing.get("metadatas", [])):
+            source_file = (meta or {}).get("source_file", "")
+            if source_file not in keep:
+                stale_ids.append(chunk_id_)
+                removed.add(source_file)
+        if stale_ids:
+            collection.delete(ids=stale_ids)
+        return sorted(removed)
+
     def query(
         self,
         collection_name: str,
         text: str,
         k: int = 5,
-        min_similarity: float = config.MIN_QUERY_SIMILARITY,
+        min_similarity: float | None = None,
     ) -> list[SearchHit]:
+        if min_similarity is None:
+            min_similarity = config.min_query_similarity()
         collection = self._collection(collection_name)
         if collection.count() == 0:
             return []

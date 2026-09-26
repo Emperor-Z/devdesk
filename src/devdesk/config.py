@@ -34,7 +34,14 @@ LOG_DIR = REPO_ROOT / "logs"
 MAX_CHUNK_TOKENS = 220
 CHUNK_OVERLAP_TOKENS = 35
 
-MIN_QUERY_SIMILARITY = 0.35
+# Relevance cutoff for a retrieved chunk, per embedding backend — the two
+# have very different similarity floors. Measured with `python
+# eval/run_eval.py --mode retrieval` on gemini-embedding-001: relevant hits
+# bottomed out at 0.661, out-of-scope queries topped out at 0.621, so 0.64
+# splits the gap (a narrow margin — re-run the eval if the corpus or
+# embedding model changes). MiniLM's 0.35 predates the eval harness and
+# hasn't been re-measured. MIN_QUERY_SIMILARITY overrides both.
+_MIN_QUERY_SIMILARITY_BY_BACKEND = {"gemini": 0.64, "minilm": 0.35}
 
 
 @dataclass(frozen=True)
@@ -68,6 +75,14 @@ PROJECTS: dict[str, ProjectConfig] = {
 
 def use_gemini_embeddings() -> bool:
     return bool(GOOGLE_API_KEY)
+
+
+def min_query_similarity() -> float:
+    override = os.environ.get("MIN_QUERY_SIMILARITY")
+    if override:
+        return float(override)
+    backend = "gemini" if use_gemini_embeddings() else "minilm"
+    return _MIN_QUERY_SIMILARITY_BY_BACKEND[backend]
 
 
 def use_langfuse() -> bool:

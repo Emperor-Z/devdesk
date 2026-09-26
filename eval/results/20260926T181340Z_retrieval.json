@@ -1,0 +1,230 @@
+{
+  "mode": "retrieval",
+  "model": "gemini-2.5-flash",
+  "embedder": "gemini-embedding-001",
+  "min_query_similarity": 0.64,
+  "timestamp": "20260926T181340Z",
+  "summary": {
+    "n": 16,
+    "pass_rate": 1.0,
+    "hit_at_k": 1.0,
+    "hit_at_1": 0.786,
+    "mrr": 0.893,
+    "out_of_scope_rejected": 1.0
+  },
+  "results": [
+    {
+      "id": "verisim-architecture",
+      "expected_agent": "verisim",
+      "retrieved": [
+        "demo/ARCHITECTURE_AND_VALIDATION.md",
+        "README.md",
+        "demo/ARCHITECTURE_AND_VALIDATION.md",
+        "docs/persona_cards.md",
+        "demo/ARCHITECTURE_AND_VALIDATION.md"
+      ],
+      "top_similarity": 0.717,
+      "first_relevant_rank": 1,
+      "passed": true
+    },
+    {
+      "id": "verisim-consent-gate",
+      "expected_agent": "verisim",
+      "retrieved": [
+        "docs/persona_cards.md",
+        "README.md",
+        "docs/consent_gate.md",
+        "docs/persona_cards.md",
+        "docs/consent_gate.md"
+      ],
+      "top_similarity": 0.734,
+      "first_relevant_rank": 1,
+      "passed": true
+    },
+    {
+      "id": "verisim-nurse",
+      "expected_agent": "verisim",
+      "retrieved": [
+        "docs/persona_cards.md",
+        "README.md",
+        "docs/persona_cards.md",
+        "docs/persona_cards.md",
+        "docs/persona_cards.md"
+      ],
+      "top_similarity": 0.814,
+      "first_relevant_rank": 1,
+      "passed": true
+    },
+    {
+      "id": "verisim-finding-3",
+      "expected_agent": "verisim",
+      "retrieved": [
+        "ARCHITECTURE.md",
+        "docs/build_notes.md",
+        "docs/build_notes.md",
+        "docs/build_notes.md",
+        "demo/ARCHITECTURE_AND_VALIDATION.md"
+      ],
+      "top_similarity": 0.68,
+      "first_relevant_rank": 2,
+      "passed": true
+    },
+    {
+      "id": "verisim-kaggle",
+      "expected_agent": "verisim",
+      "retrieved": [
+        "docs/build_notes.md",
+        "docs/kaggle_gpu_setup.md",
+        "docs/kaggle_gpu_setup.md",
+        "docs/kaggle_gpu_setup.md",
+        "docs/build_notes.md"
+      ],
+      "top_similarity": 0.776,
+      "first_relevant_rank": 2,
+      "passed": true
+    },
+    {
+      "id": "verisim-engine-step",
+      "expected_agent": "verisim",
+      "retrieved": [
+        "ARCHITECTURE.md",
+        "ARCHITECTURE.md",
+        "ARCHITECTURE.md",
+        "ARCHITECTURE.md",
+        "ARCHITECTURE.md"
+      ],
+      "top_similarity": 0.759,
+      "first_relevant_rank": 1,
+      "passed": true
+    },
+    {
+      "id": "verisim-fly-scaling",
+      "expected_agent": "verisim",
+      "retrieved": [
+        "fly/README.md",
+        "fly/README.md",
+        "fly/README.md",
+        "fly/README.md",
+        "fly/README.md"
+      ],
+      "top_similarity": 0.768,
+      "first_relevant_rank": 1,
+      "passed": true
+    },
+    {
+      "id": "ares-agents",
+      "expected_agent": "ares",
+      "retrieved": [
+        "README.md",
+        "README.md",
+        "README.md",
+        ".serena/memories/project/ares_overview.md",
+        "README.md"
+      ],
+      "top_similarity": 0.783,
+      "first_relevant_rank": 1,
+      "passed": true
+    },
+    {
+      "id": "ares-memory",
+      "expected_agent": "ares",
+      "retrieved": [
+        "README.md",
+        "README.md",
+        ".serena/memories/project/ares_overview.md",
+        "README.md",
+        "README.md"
+      ],
+      "top_similarity": 0.738,
+      "first_relevant_rank": 1,
+      "passed": true
+    },
+    {
+      "id": "ares-commands",
+      "expected_agent": "ares",
+      "retrieved": [
+        "README.md",
+        ".serena/memories/project/ares_overview.md",
+        "README.md",
+        "README.md",
+        "README.md"
+      ],
+      "top_similarity": 0.802,
+      "first_relevant_rank": 1,
+      "passed": true
+    },
+    {
+      "id": "ares-hardware-profiles",
+      "expected_agent": "ares",
+      "retrieved": [
+        "docs/ares-independence-plan.md",
+        "docs/ares-independence-plan.md",
+        "README.md",
+        "README.md",
+        ".serena/memories/project/ares_overview.md"
+      ],
+      "top_similarity": 0.771,
+      "first_relevant_rank": 1,
+      "passed": true
+    },
+    {
+      "id": "ares-next-steps",
+      "expected_agent": "ares",
+      "retrieved": [
+        "README.md",
+        "docs/ares-independence-plan.md",
+        "docs/ares-independence-plan.md",
+        ".serena/memories/project/ares_overview.md",
+        "docs/ares-independence-plan.md"
+      ],
+      "top_similarity": 0.758,
+      "first_relevant_rank": 2,
+      "passed": true
+    },
+    {
+      "id": "ares-voyager",
+      "expected_agent": "ares",
+      "retrieved": [
+        "docs/ares-independence-plan.md",
+        "docs/ares-independence-plan.md",
+        "docs/ares-independence-plan.md",
+        "README.md",
+        "README.md"
+      ],
+      "top_similarity": 0.713,
+      "first_relevant_rank": 1,
+      "passed": true
+    },
+    {
+      "id": "cross-ollama",
+      "expected_agent": "cross",
+      "retrieved": [
+        "docs/ares-independence-plan.md",
+        "README.md",
+        "docs/ares-independence-plan.md",
+        "docs/kaggle_gpu_setup.md",
+        "demo/ARCHITECTURE_AND_VALIDATION.md",
+        "docs/kaggle_gpu_setup.md"
+      ],
+      "top_similarity": 0.776,
+      "first_relevant_rank": 1,
+      "passed": true
+    },
+    {
+      "id": "none-kubernetes",
+      "expected_agent": "none",
+      "retrieved": [],
+      "top_similarity": null,
+      "first_relevant_rank": null,
+      "passed": true
+    },
+    {
+      "id": "none-sourdough",
+      "expected_agent": "none",
+      "retrieved": [],
+      "top_similarity": null,
+      "first_relevant_rank": null,
+      "passed": true
+    }
+  ]
+}
