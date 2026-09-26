@@ -138,15 +138,33 @@ to end. Langfuse UI verification itself still pending — needs the user to
 create a "DevDesk" project at their self-hosted instance
 (`localhost:3000`) and hand over the key pair.
 
-**Real gap found during this phase's live testing, not yet fixed**: when
-a specialist's model call fails (e.g. the ongoing external 503
-flakiness), the exception propagates all the way up through the router's
-`AgentTool` call as an uncaught exception, killing the whole CLI
-invocation — there's no graceful degradation ("the Ares specialist is
-temporarily unavailable, try again") the way `search_docs`'s empty-hits
-path or `git_status_lookup`'s no-repo-configured path already handle
-gracefully for their own failure modes. This belongs in the hardening
-phase.
+**Phase 4 (hardening) done, on branch `feat/hardening`**: fixed the gap
+above. `GracefulDegradationPlugin` (`hardening/error_handling.py`) returns
+a friendly fallback instead of letting `on_tool_error_callback`/
+`on_model_error_callback` propagate — ADK's plugin API supports this
+directly (returning a value from those callbacks replaces the error
+rather than raising it). Verified live by forcing `gemini-3.8-flash`'s
+5 req/min limit: the CLI now prints `"devdesk_router couldn't reach the
+model right now (ServerError); please try again shortly."` instead of a
+stack trace. The fix actually resolves the bug *inside* the specialist's
+own invocation (its model error degrades gracefully before the failure
+ever reaches the router as a tool error), which is a cleaner fix than
+patching it at the tool-call boundary would have been.
 
-Not yet done: full hardening (the gap above, plus rate limiting beyond
-the existing 429 retry), eval harness runner, deployment.
+Also added `RateLimitPlugin` (`hardening/rate_limit.py`) — proactive
+fixed-interval pacing of model calls (`RATE_LIMIT_RPM`, default 8),
+distinct from and complementary to the retry that already exists in
+`llm_client.py` and inside `google-genai`'s own client.
+`hardening/retry.py` stays an intentionally empty stub (docstring
+explains why — no third retry layer). 26 unit tests pass (5 new), lint
+clean.
+
+**Minor known rough edge, not worth fixing**: when
+`GracefulDegradationPlugin` supplies a fallback response,
+`StructuredLoggingPlugin` logs both the real `model_call_error` (correct
+latency) and a synthetic `model_call_end` for the fallback response
+itself (latency `0.0`, since it's not a real model call) — cosmetic
+double-logging, not a data-loss or correctness issue.
+
+Not yet done: eval harness runner, deployment. Langfuse UI verification
+still pending the user's key pair (see Phase 3 note above).

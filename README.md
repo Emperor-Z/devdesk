@@ -99,6 +99,27 @@ plugins key a LIFO stack by `invocation_id` instead.
 `ToolContext.function_call_id` is a real per-call identifier and doesn't
 have this problem.
 
+## Hardening
+
+Two more plugins, wired in alongside the observability ones:
+
+- **`hardening/rate_limit.py` (`RateLimitPlugin`)** — proactive
+  fixed-interval pacing of model calls (`RATE_LIMIT_RPM`, default 8),
+  ahead of hitting a 429 rather than reacting to one.
+- **`hardening/error_handling.py` (`GracefulDegradationPlugin`)** — turns
+  an unhandled model or tool error into a normal, reportable result
+  instead of a crash. ADK's `on_tool_error_callback`/
+  `on_model_error_callback` can each return a value in place of letting
+  the error propagate — that's the mechanism used here, not a new retry
+  layer. Verified live by forcing `gemini-3.8-flash`'s 5 req/min free-tier
+  limit: the CLI prints a clean "couldn't reach the model right now, try
+  again shortly" instead of a stack trace.
+
+Retry itself already exists (`llm_client.py`'s tenacity wrapper for
+embeddings, `google-genai`'s own client for chat calls) and isn't
+duplicated — `hardening/retry.py` stays an intentionally empty stub
+explaining why.
+
 ## Setup
 
 Requires Python 3.12 (3.14 has had `chromadb`/dependency compatibility
@@ -139,12 +160,9 @@ test is skipped.
 
 ## Status
 
-Phase 2 (agents, tools, RAG) and Phase 3 (observability) are built and
-verified — see `context.md` for the full build log. Not yet done: full
-production hardening (rate limiting; a specialist's model error currently
-propagates as an uncaught exception up through the router instead of
-degrading gracefully — see `context.md`), the eval harness scoring
-runner, and deployment.
+Phase 2 (agents, tools, RAG), Phase 3 (observability), and Phase 4
+(hardening) are built and verified — see `context.md` for the full build
+log. Not yet done: the eval harness scoring runner, and deployment.
 
 ## Repo layout
 
