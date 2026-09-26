@@ -190,6 +190,37 @@ question scored 0.51 against the VeriSim docs. Measured relevant hits
 bottom out at 0.661 and out-of-scope at 0.621, so the Gemini cutoff is now
 0.64, chosen per backend in `config.min_query_similarity()`.
 
+Latest e2e run (gemini-3.5-flash-lite, `eval/results/20260926T185617Z_e2e.json`):
+
+| metric | score |
+|---|---|
+| pass rate | **12/16 (0.75)** |
+| routing accuracy | 0.86 |
+| citation accuracy | 1.00 |
+| keyword recall | 0.86 |
+| out-of-scope abstention | 2/2 |
+| degraded (quota/503) | 0 |
+| latency p50 / max | 31s / 47s (mostly deliberate rate-limit pacing) |
+
+The four failures, read by hand:
+
+- `verisim-fly-scaling` — genuine routing miss: tried `ares_agent` first
+  for a Convex/Fly.io question, recovered via cross-project search.
+- `verisim-finding-3` — the question never names a project, so the router
+  used `search_all_projects` (its own rule for ambiguous questions). Answer
+  correct and cited; left as a failure rather than loosening the
+  expectation after seeing results.
+- `verisim-engine-step` — correct flow described, but never names the
+  `runStep` entrypoint.
+- `ares-next-steps` — answered from the plan's Summary/Assumptions instead
+  of its "Status > Next" list, which retrieval had ranked 2nd.
+
+Model choice came from this too: gemini-2.5-flash's free tier on this key
+is **20 requests/day** — about 4 questions at 5+ model calls each — and the
+first e2e attempt on it came back 4/4 degraded (429 `RESOURCE_EXHAUSTED`,
+`GenerateRequestsPerDayPerProjectPerModel-FreeTier`). The default is now
+gemini-3.5-flash-lite, which ran all 16 without a quota error.
+
 ## Repo layout
 
 ```
