@@ -11,6 +11,8 @@ import sys
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
+from devdesk.hardening.error_handling import GracefulDegradationPlugin
+from devdesk.hardening.rate_limit import RateLimitPlugin
 from devdesk.observability.logging import StructuredLoggingPlugin
 from devdesk.observability.tracing import LangfuseTracingPlugin
 from devdesk.router_agent import root_agent
@@ -23,7 +25,12 @@ async def ask(question: str) -> str:
     runner = InMemoryRunner(
         agent=root_agent,
         app_name=_APP_NAME,
-        plugins=[StructuredLoggingPlugin(), LangfuseTracingPlugin()],
+        plugins=[
+            StructuredLoggingPlugin(),
+            LangfuseTracingPlugin(),
+            RateLimitPlugin(),
+            GracefulDegradationPlugin(),
+        ],
     )
     session = await runner.session_service.create_session(
         app_name=_APP_NAME, user_id=_USER_ID
