@@ -20,6 +20,7 @@ from google.adk.plugins.base_plugin import BasePlugin
 from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.tool_context import ToolContext
 
+from devdesk import config
 from devdesk.config import LOG_DIR
 
 _SUMMARY_LIMIT = 300
@@ -39,7 +40,7 @@ def _response_text(llm_response: LlmResponse) -> str:
 class StructuredLoggingPlugin(BasePlugin):
     """Emits one JSON line per agent step: run/model/tool start, end, error."""
 
-    def __init__(self, name: str = "structured_logging") -> None:
+    def __init__(self, name: str = "structured_logging", log_to_file: bool | None = None) -> None:
         super().__init__(name)
         self._starts: dict[object, float] = {}
         # ADK constructs a fresh CallbackContext per callback invocation, so
@@ -47,14 +48,28 @@ class StructuredLoggingPlugin(BasePlugin):
         # model call. Model calls within one agent's turn run strictly
         # sequentially, so a per-invocation-id LIFO stack is safe instead.
         self._model_starts: dict[str, list[float]] = {}
-        LOG_DIR.mkdir(parents=True, exist_ok=True)
-        self._log_path = LOG_DIR / "devdesk.jsonl"
+        self._log_path = None
+        if config.LOG_TO_FILE if log_to_file is None else log_to_file:
+            LOG_DIR.mkdir(parents=True, exist_ok=True)
+            self._log_path = LOG_DIR / "devdesk.jsonl"
 
     def _emit(self, record: dict) -> None:
-        line = json.dumps({"ts": time.time(), **record}, default=str)
-        print(line)
-        with self._log_path.open("a", encoding="utf-8") as f:
-            f.write(line + "\n")
+        event = record.get("event", "")
+        line = json.dumps(
+            {
+                "ts": time.time(),
+                # Cloud Logging reads these two from JSON on stdout: severity
+                # drives filtering/colouring, message is the one-line summary.
+                "severity": "ERROR" if event.endswith("_error") else "INFO",
+                "message": f"{event} {record.get('agent_name', '')}".strip(),
+                **record,
+            },
+            default=str,
+        )
+        print(line, flush=True)
+        if self._log_path is not None:
+            with self._log_path.open("a", encoding="utf-8") as f:
+                f.write(line + "\n")
 
     async def before_run_callback(self, *, invocation_context: InvocationContext) -> None:
         self._starts[invocation_context.invocation_id] = time.monotonic()

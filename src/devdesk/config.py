@@ -33,6 +33,10 @@ LANGFUSE_SECRET_KEY = os.environ.get("LANGFUSE_SECRET_KEY", "")
 LANGFUSE_HOST = os.environ.get("LANGFUSE_HOST", "http://localhost:3000")
 
 LOG_DIR = REPO_ROOT / "logs"
+# JSONL file sink next to stdout. On by default locally; the Docker image
+# turns it off because Cloud Run's filesystem is RAM (the file would grow
+# into the memory limit) and stdout already goes to Cloud Logging.
+LOG_TO_FILE = os.environ.get("DEVDESK_LOG_FILE", "1") != "0"
 
 # MiniLM's own hard cutoff is 256 tokens; every embedding backend is capped
 # to the stricter of the two so chunk size never silently truncates.

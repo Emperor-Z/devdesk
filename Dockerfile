@@ -32,6 +32,8 @@ USER devdesk
 # config.REPO_ROOT resolves from the installed package's location, so point
 # the data dir at /app explicitly.
 ENV DEVDESK_HOME=/app
+# stdout only: Cloud Run's filesystem is RAM, and stdout reaches Cloud Logging.
+ENV DEVDESK_LOG_FILE=0
 
 EXPOSE 8080
 CMD ["sh", "-c", "exec uvicorn devdesk.server:app --host 0.0.0.0 --port ${PORT}"]
