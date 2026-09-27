@@ -75,6 +75,9 @@ class VectorStore:
         if stale_ids:
             collection.delete(ids=list(stale_ids))
 
+    def count(self, collection_name: str) -> int:
+        return self._collection(collection_name).count()
+
     def prune_source_files(self, collection_name: str, keep: set[str]) -> list[str]:
         """Delete every chunk whose source_file isn't in `keep`; returns the
         removed source files."""

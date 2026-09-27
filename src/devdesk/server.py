@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 
 from devdesk import config
 from devdesk.cli import build_runner, run_question
+from devdesk.rag.vectorstore import VectorStore
 
 _MAX_QUESTION_CHARS = 2000
 
@@ -31,6 +32,11 @@ class AskResponse(BaseModel):
     router_tool_calls: list[str]
 
 
+def index_chunk_counts() -> dict[str, int]:
+    store = VectorStore()
+    return {name: store.count(cfg.collection_name) for name, cfg in config.PROJECTS.items()}
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # The baked-in index was embedded with Gemini; querying it with the
@@ -38,6 +44,13 @@ async def lifespan(app: FastAPI):
     # request. Refuse to start instead.
     if not config.use_gemini_embeddings():
         raise RuntimeError("GOOGLE_API_KEY is not set; refusing to start")
+    # An empty index still "works" — every answer is just "no relevant
+    # docs". Fail loudly instead, locally and in the image alike.
+    app.state.index_chunks = index_chunk_counts()
+    if not any(app.state.index_chunks.values()):
+        raise RuntimeError(
+            f"index at {config.CHROMA_DIR} is empty; run `python -m devdesk.rag.ingest`"
+        )
     app.state.runner = build_runner()
     yield
 
@@ -47,7 +60,11 @@ app = FastAPI(title="DevDesk", lifespan=lifespan)
 
 @app.get("/healthz")
 async def healthz() -> dict:
-    return {"status": "ok", "model": config.GEMINI_MODEL}
+    return {
+        "status": "ok",
+        "model": config.GEMINI_MODEL,
+        "index_chunks": app.state.index_chunks,
+    }
 
 
 @app.post("/ask")

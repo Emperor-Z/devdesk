@@ -13,12 +13,15 @@ def client(monkeypatch):
     monkeypatch.setattr(config, "GOOGLE_API_KEY", "test-key")
     monkeypatch.setattr(server, "build_runner", lambda: object())
     monkeypatch.setattr(server, "run_question", fake_run_question)
+    monkeypatch.setattr(server, "index_chunk_counts", lambda: {"ares": 3, "verisim": 0})
     with TestClient(server.app) as c:
         yield c
 
 
-def test_healthz(client):
-    assert client.get("/healthz").json()["status"] == "ok"
+def test_healthz_reports_index_size(client):
+    body = client.get("/healthz").json()
+    assert body["status"] == "ok"
+    assert body["index_chunks"] == {"ares": 3, "verisim": 0}
 
 
 def test_ask_returns_answer_and_routing(client):
@@ -35,4 +38,11 @@ def test_ask_rejects_empty_or_oversized_questions(client, question):
 def test_server_refuses_to_start_without_api_key(monkeypatch):
     monkeypatch.setattr(config, "GOOGLE_API_KEY", "")
     with pytest.raises(RuntimeError, match="GOOGLE_API_KEY"), TestClient(server.app):
+        pass
+
+
+def test_server_refuses_to_start_with_an_empty_index(monkeypatch):
+    monkeypatch.setattr(config, "GOOGLE_API_KEY", "test-key")
+    monkeypatch.setattr(server, "index_chunk_counts", lambda: {"ares": 0, "verisim": 0})
+    with pytest.raises(RuntimeError, match="ingest"), TestClient(server.app):
         pass
