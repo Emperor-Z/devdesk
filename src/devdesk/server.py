@@ -30,6 +30,7 @@ class AskRequest(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     router_tool_calls: list[str]
+    unverified_citations: list[str]
 
 
 def index_chunk_counts() -> dict[str, int]:
@@ -70,7 +71,11 @@ async def healthz() -> dict:
 @app.post("/ask")
 async def ask(req: AskRequest) -> AskResponse:
     result = await run_question(app.state.runner, req.question)
-    return AskResponse(answer=result.answer, router_tool_calls=result.router_tool_calls)
+    return AskResponse(
+        answer=result.answer,
+        router_tool_calls=result.router_tool_calls,
+        unverified_citations=result.unverified_citations,
+    )
 
 
 def main() -> None:

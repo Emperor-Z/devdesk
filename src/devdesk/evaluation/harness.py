@@ -70,9 +70,11 @@ async def run_e2e(queries: list[EvalQuery]) -> list[E2EScore]:
         try:
             result = await run_question(runner, q.question)
             answer, calls = result.answer, result.router_tool_calls
+            unverified = result.unverified_citations
         except Exception as exc:  # noqa: BLE001 — one bad query mustn't kill the batch
             answer, calls = f"(harness error: {type(exc).__name__}: {exc})", []
-        scores.append(score_e2e(q, answer, calls, time.monotonic() - start))
+            unverified = []
+        scores.append(score_e2e(q, answer, calls, time.monotonic() - start, unverified))
     return scores
 
 

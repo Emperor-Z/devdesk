@@ -37,6 +37,20 @@ def _response_text(llm_response: LlmResponse) -> str:
     return "".join(p.text or "" for p in llm_response.content.parts)
 
 
+def log_event(event: str, severity: str = "INFO", **fields: Any) -> None:
+    """One-off structured line outside the plugin callbacks (same shape,
+    same sinks), e.g. for post-run checks in cli.run_question."""
+    line = json.dumps(
+        {"ts": time.time(), "severity": severity, "message": event, "event": event, **fields},
+        default=str,
+    )
+    print(line, flush=True)
+    if config.LOG_TO_FILE:
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        with (LOG_DIR / "devdesk.jsonl").open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+
+
 class StructuredLoggingPlugin(BasePlugin):
     """Emits one JSON line per agent step: run/model/tool start, end, error."""
 

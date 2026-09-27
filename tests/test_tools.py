@@ -62,3 +62,19 @@ def test_search_docs_unknown_project_returns_error():
     result = search_docs("nope", "anything")
     assert result["hits"] == []
     assert "error" in result
+
+
+def test_search_docs_records_hits_for_citation_verification(fake_embedder, tmp_path):
+    from devdesk.citations import start_request
+
+    store = VectorStore(persist_dir=str(tmp_path), embedder=fake_embedder)
+    store.upsert_source_file(
+        "verisim", "coll", "ARCHITECTURE.md",
+        [Chunk(text="VeriSim uses Convex for the backend", header_path="Backend", index=0)],
+    )
+    fake_cfg = ProjectConfig(name="verisim", source_path=tmp_path, collection_name="coll")
+    record = start_request()
+    with patch("devdesk.tools.search_docs.PROJECTS", {"verisim": fake_cfg}), \
+         patch("devdesk.tools.search_docs._store", store):
+        search_docs("verisim", "Convex backend", k=3)
+    assert record == {("ARCHITECTURE.md", "Backend")}

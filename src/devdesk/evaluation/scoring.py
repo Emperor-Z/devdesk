@@ -119,6 +119,7 @@ class E2EScore:
     missing_keywords: list[str] = field(default_factory=list)
     abstained: bool | None = None
     passed: bool = False
+    unverified_citations: list[str] = field(default_factory=list)
 
 
 def routing_correct(expected_agent: str, calls: list[str]) -> bool | None:
@@ -135,7 +136,11 @@ def routing_correct(expected_agent: str, calls: list[str]) -> bool | None:
 
 
 def score_e2e(
-    query: EvalQuery, answer: str, router_tool_calls: list[str], latency_s: float
+    query: EvalQuery,
+    answer: str,
+    router_tool_calls: list[str],
+    latency_s: float,
+    unverified_citations: list[str] | None = None,
 ) -> E2EScore:
     lowered = answer.lower()
     degraded = not answer.strip() or any(m in lowered for m in _DEGRADED_MARKERS)
@@ -154,6 +159,7 @@ def score_e2e(
             cited_expected_source=None,
             abstained=abstained,
             passed=abstained and not degraded,
+            unverified_citations=unverified_citations or [],
         )
 
     cited = any(src.lower() in lowered for src in query.expected_sources)
@@ -169,6 +175,7 @@ def score_e2e(
         cited_expected_source=cited,
         missing_keywords=missing,
         passed=bool(routing) and cited and not missing and not degraded,
+        unverified_citations=unverified_citations or [],
     )
 
 
@@ -209,6 +216,8 @@ def summarize_e2e(scores: list[E2EScore]) -> dict:
         "citation_accuracy": _rate([bool(s.cited_expected_source) for s in in_scope]),
         "keyword_recall": _rate([not s.missing_keywords for s in in_scope]),
         "abstention_rate": _rate([bool(s.abstained) for s in out_scope]),
+        # Citations the model invented and the verifier stripped (should be 0).
+        "unverified_citations": sum(len(s.unverified_citations) for s in healthy),
         "latency_p50_s": latencies[len(latencies) // 2] if latencies else None,
         "latency_max_s": latencies[-1] if latencies else None,
     }
