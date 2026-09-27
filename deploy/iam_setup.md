@@ -20,7 +20,7 @@ spec — it's injected from Secret Manager at instance start.
 
 ```bash
 PROJECT_ID=your-project
-REGION=europe-west2
+REGION=europe-west1   # Tier-1 pricing: cheapest if usage ever exceeds the free tier
 gcloud config set project "$PROJECT_ID"
 
 gcloud services enable run.googleapis.com artifactregistry.googleapis.com \

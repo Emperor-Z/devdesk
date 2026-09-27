@@ -39,7 +39,9 @@ spec:
           resources:
             limits:
               cpu: "1"
-              memory: 1Gi
+              # Measured peak ~130MiB during a query; 512Mi leaves ~4x headroom
+              # and halves GiB-seconds drawn from the free tier vs 1Gi.
+              memory: 512Mi
           env:
             - name: GEMINI_MODEL
               value: gemini-3.5-flash-lite
