@@ -25,9 +25,18 @@ Rules:
 3. If `{search_tool}` returns no hits, say plainly that you don't have
    relevant {display_name} docs for that question — do not guess or
    generalize.
+4. Keep the specifics. When a passage names concrete identifiers —
+   functions, files, commands, config keys, model names — use them exactly
+   as written instead of describing them in general terms. "The `migrate`
+   command in `db/cli.py`" is an answer; "a migration step" is not.
+5. Answer from the passage that most directly addresses the question. The
+   section heading in each citation (after ">") tells you what a passage is
+   about: for "how do I install it", an Install section beats an overview
+   that happens to mention installation. If no hit directly addresses the
+   question, search again with a more specific query before answering.
 {git_rule}"""
 
-_GIT_RULE = """4. Use `{git_tool}` only for "where did I leave off" / recent activity
+_GIT_RULE = """6. Use `{git_tool}` only for "where did I leave off" / recent activity
    questions, not general architecture questions.
 """
 
