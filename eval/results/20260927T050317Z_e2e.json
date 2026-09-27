@@ -1,0 +1,114 @@
+{
+  "mode": "e2e",
+  "model": "gemini-3.5-flash-lite",
+  "embedder": "gemini-embedding-001",
+  "min_query_similarity": 0.64,
+  "timestamp": "20260927T050317Z",
+  "summary": {
+    "n": 6,
+    "degraded": 0,
+    "pass_rate": 0.5,
+    "routing_accuracy": 0.667,
+    "citation_accuracy": 0.833,
+    "keyword_recall": 0.833,
+    "abstention_rate": null,
+    "latency_p50_s": 30.64,
+    "latency_max_s": 51.2
+  },
+  "results": [
+    {
+      "id": "ho-kaggle-caveats",
+      "expected_agent": "verisim",
+      "answer": "Serving the model through a Kaggle notebook tunnel comes with the following downsides:\n\n* **Ephemeral Nature:** The tunnel URL changes every time the notebook restarts. Kaggle sessions are also capped at approximately 12 hours and will time out on idle, making it suitable for demos or recording sessions rather than an always-on deployment (VeriSim: `docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log)`).\n* **Latency:** Each generation round-trips from your local machine to Cloudflare and then to the GPU. While still significantly faster than running on a local CPU, it is not instant (VeriSim: `docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log)`).\n* **Open Endpoint:** The `trycloudflare.com` URL is public while it is running. Although the risk is low since it is just an LLM without stored sensitive user data, you should avoid leaving it running unattended or sending sensitive inputs (VeriSim: `docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log)`).\n* **Reproducibility:** You need to explicitly record which model and platform produced any results you keep (such as noting the specific `OLLAMA_MODEL` value and GPU type like the Kaggle T4) (VeriSim: `docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log)`).",
+      "router_tool_calls": [
+        "ares_agent",
+        "search_all_projects"
+      ],
+      "latency_s": 32.68,
+      "degraded": false,
+      "routing_correct": false,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": false
+    },
+    {
+      "id": "ho-consent-events",
+      "expected_agent": "verisim",
+      "answer": "The consent-gate classifier labels player utterances into four distinct event kinds, each affecting the patient's trust score as follows:\n\n1. **`deescalation_lever`**\n   * **Trust change:** +15 (also increments `deescalations++`) [(docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as))](docs/consent_gate.md)\n   * **Example:** *\"Ray, I can see this is frightening — take your time.\"* [(docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as))](docs/consent_gate.md)\n\n2. **`plain_explanation`**\n   * **Trust change:** +10 (also increments `plainExplanations++`) [(docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as))](docs/consent_gate.md)\n   * **Example:** *\"The heart tracing tells me if your heart's short of blood — that's why it matters to you.\"* [(docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as))](docs/consent_gate.md)\n\n3. **`escalation_trigger`**\n   * **Trust change:** −20 [(docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as))](docs/consent_gate.md)\n   * **Example:** *\"You need to calm down and let me do my job.\"* [(docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as))](docs/consent_gate.md)\n\n4. **`neutral`**\n   * **Trust change:** 0 [(docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as))](docs/consent_gate.md)\n   * **Example:** *\"How long have you had the pain?\"* [(docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as))](docs/consent_gate.md)\n\nThese trust score changes directly govern the patient's state transitions between `hostile`, `wary`, and `consenting` (or lead to a `self-discharged` fail state if trust bottoms out) [(README.md > VeriSim 🏥 > Scenario: \"Chest Pain, A&E Bay 3\" > The consent-gate mechanic)](docs/consent_gate.md).",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 30.64,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    },
+    {
+      "id": "ho-consent-unvalidated",
+      "expected_agent": "verisim",
+      "answer": "While the implementation-level logic and the end-to-end backend/UI integration of the consent gate have been validated—with the refuse → de-escalate → permit flow exercised both via direct mutation calls and a real UI click—**the live LLM agent dialogue path does not work yet** (verisim: README.md > VeriSim 🏥 > Status). \n\nSpecifically, on `main`, an agent step can block indefinitely on a hung local Ollama call with no timeout, which stalls the engine's tick loop entirely (verisim: README.md > VeriSim 🏥 > Status).",
+      "router_tool_calls": [
+        "search_all_projects",
+        "verisim_agent"
+      ],
+      "latency_s": 51.2,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": false,
+      "missing_keywords": [
+        "classifier"
+      ],
+      "abstained": null,
+      "passed": false
+    },
+    {
+      "id": "ho-difficulty-dial",
+      "expected_agent": "verisim",
+      "answer": "In the consent gate, scenario difficulty is tuned via the persona card's **\"Difficulty dial\"** (which controls hostility, bystander panic, and time pressure). This dial maps directly onto the starting trust level (`START_TRUST`) as well as the gain and loss magnitudes used by the state machine inside `consentGate.ts` (VERISIM: `docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Tuning / difficulty dial`).",
+      "router_tool_calls": [
+        "search_all_projects"
+      ],
+      "latency_s": 15.06,
+      "degraded": false,
+      "routing_correct": false,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": false
+    },
+    {
+      "id": "ho-ares-requirements",
+      "expected_agent": "ares",
+      "answer": "To run Ares, you need the following installed:\n\n- Python 3.12+ (devdesk_ares: README.md > Ares > Requirements)\n- Ollama with the models in `ares/config.py` pulled (`start.sh` tells you which are missing) (devdesk_ares: README.md > Ares > Requirements)\n- Docker, for the optional Langfuse tracing stack (devdesk_ares: README.md > Ares > Requirements)\n- Serena on your `PATH`, for `/serena` (devdesk_ares: README.md > Ares > Requirements)",
+      "router_tool_calls": [
+        "ares_agent"
+      ],
+      "latency_s": 29.61,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    },
+    {
+      "id": "ho-ares-reflexion",
+      "expected_agent": "ares",
+      "answer": "Ares learns from past task traces using a trace-to-reflection loop, detailed as follows:\n\n* **Post-Task Reflection:** After each task completes (whether successful or failed), a short reflection prompt is run against the Langfuse trace summary (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Reflexion — trace-to-reflection loop).\n* **Storage:** The resulting reflection is stored in mem0, tagged by task type and outcome (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Reflexion — trace-to-reflection loop).\n* **Pre-Task Retrieval:** Before initiating a new task, the top-$k$ relevant reflections are retrieved and prepended to the agent's system prompt (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Reflexion — trace-to-reflection loop).\n* **Infrastructure:** This leverages existing infrastructure (Langfuse + mem0) requiring only a post-task hook and a pre-task retrieval step (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Reflexion — trace-to-reflection loop).",
+      "router_tool_calls": [
+        "ares_agent"
+      ],
+      "latency_s": 30.61,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true
+    }
+  ]
+}
