@@ -16,9 +16,13 @@ projects:
 | `ares` | Local, Ollama-backed multi-agent stack | [Emperor-Z/ares](https://github.com/Emperor-Z/ares) (public, MIT) |
 | `verisim` | Simulation-training dissertation project | [Emperor-Z/verisim](https://github.com/Emperor-Z/verisim) (public, MIT) |
 
-New tenants are added by pointing `PROJECTS` in `src/devdesk/config.py` at
-a source path and re-running `python -m devdesk.rag.ingest` — nothing else
-in the router or the RAG pipeline is tenant-specific.
+A tenant is one `ProjectConfig` entry in `src/devdesk/config.py`: a
+source path, a display name, and a description of what its docs cover.
+The specialist agent (`specialists/factory.py`), its tools, and the
+router's routing guidance and tool list are all generated from that
+entry, so onboarding is one config entry plus `python -m
+devdesk.rag.ingest`. The description matters: the router routes on it,
+which the eval showed directly (see Evaluation).
 
 ## Architecture
 
@@ -260,7 +264,7 @@ gemini-3.5-flash-lite, which ran all 16 without a quota error.
 ```
 src/devdesk/
   router_agent.py        # top-level LlmAgent, explicit delegation
-  specialists/            # one LlmAgent per tenant
+  specialists/factory.py  # builds each tenant's specialist from config
   tools/                  # search_docs, search_all_projects, git_status_lookup
   rag/                     # chunking, embeddings, vectorstore, ingest
   observability/          # structured logging + Langfuse plugins
