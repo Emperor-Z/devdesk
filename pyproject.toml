@@ -14,6 +14,10 @@ dependencies = [
     "uvicorn",
 ]
 
+[project.scripts]
+devdesk = "devdesk.cli:main"
+devdesk-serve = "devdesk.server:main"
+
 [project.optional-dependencies]
 # Local MiniLM embedding fallback (pulls torch). Not needed when
 # GOOGLE_API_KEY is set, so the server image leaves it out.

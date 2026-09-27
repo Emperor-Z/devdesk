@@ -139,7 +139,8 @@ cp .env.example .env
 # edit .env: set GOOGLE_API_KEY (see below)
 
 python -m devdesk.rag.ingest        # index both tenants
-python -m devdesk.cli "what agents make up the Ares stack?"
+devdesk "what agents make up the Ares stack?"   # CLI
+devdesk-serve                                   # HTTP API on :8080, same as the container
 ```
 
 ### API keys you need
@@ -270,8 +271,9 @@ src/devdesk/
   observability/          # structured logging + Langfuse plugins
   hardening/              # rate limiting + graceful degradation plugins
   evaluation/             # eval scoring (pure) + runner
-  cli.py                  # python -m devdesk.cli "question"
-  server.py               # FastAPI: POST /ask, GET /healthz
+  cli.py                  # `devdesk "question"`
+
+  server.py               # `devdesk-serve`: POST /ask, GET /healthz
 eval/queries.yaml          # hand-written eval set
 eval/run_eval.py           # python eval/run_eval.py --mode retrieval|e2e
 eval/results/              # committed baseline runs

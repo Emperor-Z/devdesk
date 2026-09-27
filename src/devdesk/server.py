@@ -1,6 +1,6 @@
-"""HTTP entrypoint for container / Cloud Run deploys.
+"""HTTP entrypoint — the same command locally and in the Cloud Run image:
 
-    uvicorn devdesk.server:app --port 8080
+    devdesk-serve            # listens on $PORT (default 8080)
 
 One process-wide runner, so RateLimitPlugin paces every request together —
 which is also why the Cloud Run service is pinned to a single instance
@@ -71,3 +71,17 @@ async def healthz() -> dict:
 async def ask(req: AskRequest) -> AskResponse:
     result = await run_question(app.state.runner, req.question)
     return AskResponse(answer=result.answer, router_tool_calls=result.router_tool_calls)
+
+
+def main() -> None:
+    import os
+
+    import uvicorn
+
+    # Cloud Run injects PORT; locally it defaults to 8080. Binding 0.0.0.0
+    # is what a container needs; set HOST=127.0.0.1 to keep a local run private.
+    uvicorn.run(
+        app,
+        host=os.environ.get("HOST", "0.0.0.0"),
+        port=int(os.environ.get("PORT", "8080")),
+    )

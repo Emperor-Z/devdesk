@@ -36,4 +36,4 @@ ENV DEVDESK_HOME=/app
 ENV DEVDESK_LOG_FILE=0
 
 EXPOSE 8080
-CMD ["sh", "-c", "exec uvicorn devdesk.server:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["devdesk-serve"]
