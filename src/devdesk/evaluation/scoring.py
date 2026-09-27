@@ -15,6 +15,7 @@ from pathlib import Path
 import yaml
 
 AGENTS = ("verisim", "ares", "cross", "none")
+SPLITS = ("dev", "holdout")
 
 # Strings GracefulDegradationPlugin substitutes for a failed model/tool call.
 # An answer containing one is an infrastructure failure, not a quality one,
@@ -32,6 +33,7 @@ class EvalQuery:
     expected_agent: str
     expected_sources: tuple[str, ...] = ()
     expected_keywords: tuple[str, ...] = ()
+    split: str = "dev"
 
 
 def load_queries(path: Path) -> list[EvalQuery]:
@@ -45,7 +47,10 @@ def load_queries(path: Path) -> list[EvalQuery]:
             expected_agent=item["expected_agent"],
             expected_sources=tuple(item.get("expected_sources") or ()),
             expected_keywords=tuple(item.get("expected_keywords") or ()),
+            split=item.get("split", "dev"),
         )
+        if q.split not in SPLITS:
+            raise ValueError(f"{q.id}: split must be one of {SPLITS}")
         if q.expected_agent not in AGENTS:
             raise ValueError(f"{q.id}: expected_agent must be one of {AGENTS}")
         if q.id in seen:

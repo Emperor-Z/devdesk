@@ -3,6 +3,7 @@
 #
 # Fields:
 #   id                 stable key, used in result files and --ids filtering
+#   split              dev (default) or holdout — see the held-out section below
 #   question           asked verbatim
 #   expected_agent     verisim | ares   -> router should call only that specialist
 #                      cross            -> router should use search_all_projects
@@ -109,3 +110,50 @@
   expected_agent: none
   expected_sources: []
   expected_keywords: []
+
+# --- Held-out split -------------------------------------------------------
+# Written 2026-09-27 BEFORE any prompt changes aimed at the dev-split
+# failures above, and never used to tune them. If a change helps dev but
+# not these, it's overfitting to the dev questions.
+
+- id: ho-kaggle-caveats
+  split: holdout
+  question: "What are the downsides of serving the model through a Kaggle notebook tunnel?"
+  expected_agent: verisim
+  expected_sources: [docs/kaggle_gpu_setup.md]
+  expected_keywords: [cloudflare]
+
+- id: ho-consent-events
+  split: holdout
+  question: "Which kinds of player utterance does the consent-gate classifier label, and how does each change trust?"
+  expected_agent: verisim
+  expected_sources: [docs/consent_gate.md]
+  expected_keywords: [escalation]
+
+- id: ho-consent-unvalidated
+  split: holdout
+  question: "What parts of the consent gate haven't been validated yet?"
+  expected_agent: verisim
+  expected_sources: [docs/consent_gate.md]
+  expected_keywords: [classifier]
+
+- id: ho-difficulty-dial
+  split: holdout
+  question: "How is scenario difficulty tuned in the consent gate?"
+  expected_agent: verisim
+  expected_sources: [docs/consent_gate.md, docs/persona_cards.md]
+  expected_keywords: [START_TRUST]
+
+- id: ho-ares-requirements
+  split: holdout
+  question: "What do I need installed to run Ares?"
+  expected_agent: ares
+  expected_sources: [README.md]
+  expected_keywords: [ollama, serena]
+
+- id: ho-ares-reflexion
+  split: holdout
+  question: "How would Ares learn from its past task traces?"
+  expected_agent: ares
+  expected_sources: [docs/ares-independence-plan.md]
+  expected_keywords: [langfuse, mem0]
