@@ -13,11 +13,12 @@ load_dotenv(REPO_ROOT / ".env")
 
 CHROMA_DIR = REPO_ROOT / "data" / ".chroma"
 
-# gemini-3.8-flash (current GA default in AI Studio) returned repeated 503
-# "high demand" errors from this free-tier key at build time; gemini-2.5-flash
-# was reliable. Defaulting to the reliable one — override via env if 3.8
-# stabilizes for you.
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+# Free-tier limits decide this more than quality does. gemini-2.5-flash
+# allows only 20 requests/day on this key (~4 questions at 5+ calls each);
+# gemini-3.8-flash is 5 req/min and was 503-prone. gemini-3.5-flash-lite
+# ran the full 16-query e2e eval with zero quota errors — see README
+# "Evaluation" for its scores. Override via env to compare models.
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
 GEMINI_EMBEDDING_MODEL = os.environ.get(
     "GEMINI_EMBEDDING_MODEL", "gemini-embedding-001"
 )

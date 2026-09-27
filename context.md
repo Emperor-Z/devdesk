@@ -203,7 +203,15 @@ Results written to `eval/results/<utc>_<mode>.json`.
   index had pytest's boilerplate README), and `prune_source_files` drops
   deleted files (per-file upsert never did).
 - Retrieval result: 16/16, hit@1 0.79, MRR 0.89. 46 unit tests pass.
-- **e2e mode not yet run live** — ~80 model calls at RATE_LIMIT_RPM=8 is
-  ~10+ min and a big chunk of the free-tier daily quota.
+- **e2e baseline** (gemini-3.5-flash-lite): 12/16, routing 0.86,
+  citations 1.0, keywords 0.86, abstention 2/2, 0 degraded. Failures:
+  fly-scaling (real routing miss), finding-3 (ambiguous question → router
+  correctly cross-searched; kept strict), engine-step and ares-next-steps
+  (answer-content gaps). Details in README "Evaluation".
+- **Default model → gemini-3.5-flash-lite.** Probed the 429s:
+  gemini-2.5-flash free tier is 20 requests/DAY on this key
+  (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`) — ~4 questions.
+  gemini-2.5-flash-lite is 404 for new users; gemini-3.8-flash-lite doesn't
+  exist. Always run a 4-query `--ids` sample before a full e2e run.
 
-Not yet done: live e2e run, deployment.
+Not yet done: deployment.
