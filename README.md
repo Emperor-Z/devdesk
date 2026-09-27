@@ -174,22 +174,27 @@ the key arrives at runtime. The server refuses to start without
 `GOOGLE_API_KEY`, since the baked index is Gemini-embedded and a MiniLM
 query against it would fail on the first request instead.
 
-Cloud Run config is in `deploy/` — `cloudrun_service.yaml` plus a
-step-by-step runbook in `deploy/iam_setup.md`. The shape is
-least-privilege:
+Cloud Run deploys are one command each (`deploy/deploy.sh setup`, then
+`deploy/deploy.sh deploy`), sized to stay inside GCP's **always-free
+tier**. A card is needed for the billing account, but DevDesk's usage is
+a small fraction of the free allowance. The full runbook, costs and
+gotchas are in `deploy/iam_setup.md`. The setup is least-privilege:
 
 - a dedicated runtime service account with **no project roles**, only
   `secretAccessor` on the one Secret Manager secret holding the Gemini key;
-- **no `allUsers` invoker** — Cloud Run IAM is the auth boundary, callers
+- **no `allUsers` invoker**: Cloud Run IAM is the auth boundary, and callers
   need `roles/run.invoker` on the service and an identity token;
 - **`maxScale: 1`**, because `RateLimitPlugin` paces per process while
   the free-tier quota is per project;
-- scale-to-zero, so idle cost stays at zero.
+- scale-to-zero, 512Mi (measured peak ~130MiB), and an Artifact Registry
+  cleanup policy, so idle cost stays at zero;
+- deployed to a **separate project** from the Gemini key, because linking
+  billing to the key's project moves it off the Gemini free tier.
 
 Verified locally: the container image builds, answers a real question
 end to end (routed to `ares_agent`, fully cited, ~25s), rejects invalid
 input with 422, and refuses to start without a key. Not yet deployed to
-a live GCP project — that needs billing enabled.
+a live GCP project yet.
 
 ## Status
 
