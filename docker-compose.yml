@@ -1,0 +1,17 @@
+# Local run of the same image Cloud Run serves:
+#   python -m devdesk.rag.ingest   # once, builds data/.chroma
+#   docker compose up --build
+#   curl -s localhost:8080/ask -H 'content-type: application/json' \
+#        -d '{"question": "What slash commands does the Ares REPL support?"}'
+services:
+  devdesk:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file: .env
+    # The in-image Langfuse default (localhost:3000) is the container itself;
+    # reach a Langfuse running on the host instead.
+    environment:
+      LANGFUSE_HOST: http://host.docker.internal:3000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

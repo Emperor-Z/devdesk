@@ -1,0 +1,57 @@
+# Cloud Run service spec — apply with:
+#   gcloud run services replace deploy/cloudrun_service.yaml --region "$REGION"
+# PROJECT_ID / REGION placeholders are filled by the commands in
+# deploy/iam_setup.md (sed), which also creates the service account and
+# secret this references.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: devdesk
+  labels:
+    cloud.googleapis.com/location: REGION
+  annotations:
+    # Reachable over the internet, but only callers holding roles/run.invoker
+    # on this service get past Cloud Run's IAM check (no allUsers binding).
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        # Scale to zero: no idle cost on the free tier.
+        autoscaling.knative.dev/minScale: "0"
+        # One instance, deliberately. RateLimitPlugin paces calls per
+        # process, but the Gemini free-tier quota is per project — two
+        # instances would each pace at RATE_LIMIT_RPM and together blow it.
+        autoscaling.knative.dev/maxScale: "1"
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      # Dedicated identity with no project-level roles; its only grant is
+      # secretAccessor on the one secret below (see iam_setup.md).
+      serviceAccountName: devdesk-runtime@PROJECT_ID.iam.gserviceaccount.com
+      # A question is ~5 sequential model calls, paced several seconds apart.
+      timeoutSeconds: 300
+      containerConcurrency: 4
+      containers:
+        - image: REGION-docker.pkg.dev/PROJECT_ID/devdesk/devdesk:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          env:
+            - name: GEMINI_MODEL
+              value: gemini-3.5-flash-lite
+            - name: RATE_LIMIT_RPM
+              value: "8"
+            - name: GOOGLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: devdesk-gemini-api-key
+                  key: latest
+          startupProbe:
+            httpGet:
+              path: /healthz
+            periodSeconds: 5
+            failureThreshold: 12
