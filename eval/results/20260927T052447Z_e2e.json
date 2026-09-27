@@ -1,0 +1,117 @@
+{
+  "mode": "e2e",
+  "model": "gemini-3.5-flash-lite",
+  "embedder": "gemini-embedding-001",
+  "min_query_similarity": 0.64,
+  "timestamp": "20260927T052447Z",
+  "summary": {
+    "n": 6,
+    "degraded": 0,
+    "pass_rate": 0.833,
+    "routing_accuracy": 1.0,
+    "citation_accuracy": 0.833,
+    "keyword_recall": 1.0,
+    "abstention_rate": null,
+    "unverified_citations": 0,
+    "latency_p50_s": 30.6,
+    "latency_max_s": 44.66
+  },
+  "results": [
+    {
+      "id": "ho-kaggle-caveats",
+      "expected_agent": "verisim",
+      "answer": "The downsides of serving the model through a Kaggle notebook tunnel are:\n\n- **Ephemeral:** The tunnel URL changes every time the notebook restarts, and Kaggle sessions cap around 12 hours and time out on idle (making it fine for a demo or recording session, but not for always-on use) (docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log)).\n- **Latency:** Each generation has to round-trip from your laptop through Cloudflare to the GPU (which is still far faster than local CPU, but not instant) (docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log)).\n- **Open endpoint:** The `trycloudflare.com` URL is public while it is up. While the risk is low since it is just an LLM with no persistent data, you should not leave it running unattended or send sensitive input to it (docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log)).\n- **Reproducibility:** You need to manually record which model and platform produced any result you want to keep for your dissertation (noting both the `OLLAMA_MODEL` value and \"Kaggle T4\") (docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log)).",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 25.14,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true,
+      "unverified_citations": []
+    },
+    {
+      "id": "ho-consent-events",
+      "expected_agent": "verisim",
+      "answer": "The consent-gate classifier labels player utterances into four kinds of events, each affecting trust as follows:\n\n* **`deescalation_lever`**: Changes trust by **+15** (and increments `deescalations++`) (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as)). Example: *\"Ray, I can see this is frightening — take your time.\"* (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as))\n* **`plain_explanation`**: Changes trust by **+10** (and increments `plainExplanations++`) (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as)). Example: *\"The heart tracing tells me if your heart's short of blood — that's why it matters *to you*.\"* (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as))\n* **`escalation_trigger`**: Changes trust by **−20** (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as)). Example: *\"You need to calm down and let me do my job.\"* (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as))\n* **`neutral`**: Changes trust by **0** (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as)). Example: *\"How long have you had the pain?\"* (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as))",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 37.64,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true,
+      "unverified_citations": []
+    },
+    {
+      "id": "ho-consent-unvalidated",
+      "expected_agent": "verisim",
+      "answer": "Based on the VeriSim documentation and status files, while the implementation-level logic of the consent gate (the reducer, event classifier, and session orchestrator) is unit-tested and fully operational, and has been validated end-to-end against a live backend, **the live LLM agent dialogue path has not been validated to work yet** (devdesk_verisim: README.md > VeriSim 🏥 > Status). \n\nSpecifically, on `main`, an agent step can block indefinitely on a hung local Ollama call with no timeout, which stalls the engine's tick loop entirely (devdesk_verisim: README.md > VeriSim 🏥 > Status).",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 44.66,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": false,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": false,
+      "unverified_citations": []
+    },
+    {
+      "id": "ho-difficulty-dial",
+      "expected_agent": "verisim",
+      "answer": "All thresholds and deltas are constants at the top of `consentGate.ts` (`START_TRUST`, `DEESCALATION_GAIN`, `WARY_AT`, `CONSENTING_AT`, `SELF_DISCHARGE_REFUSALS`, …). The persona card's \"Difficulty dial\" (hostility, bystander panic, time pressure) maps onto `START_TRUST` and the gain/loss magnitudes. (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Tuning / difficulty dial)",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 29.6,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true,
+      "unverified_citations": []
+    },
+    {
+      "id": "ho-ares-requirements",
+      "expected_agent": "ares",
+      "answer": "To run Ares, you need the following installed:\n\n- Python 3.12+ (devdesk_ares: README.md > Ares > Requirements)\n- [Ollama](https://ollama.com) with the models in `ares/config.py` pulled (`start.sh` tells you which are missing) (devdesk_ares: README.md > Ares > Requirements)\n- Docker, for the optional Langfuse tracing stack (devdesk_ares: README.md > Ares > Requirements)\n- [Serena](https://github.com/oraios/serena) on your `PATH`, for `/serena` (devdesk_ares: README.md > Ares > Requirements)",
+      "router_tool_calls": [
+        "ares_agent"
+      ],
+      "latency_s": 30.11,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true,
+      "unverified_citations": []
+    },
+    {
+      "id": "ho-ares-reflexion",
+      "expected_agent": "ares",
+      "answer": "Ares learns from past task traces through the Reflexion trace-to-reflection loop and the Voyager skill library planned in its Phase 2 intelligence layer:\n\n- **Reflexion — trace-to-reflection loop:** After each task completes (success or failure), a short reflection prompt is run against the Langfuse trace summary, and the resulting reflection is stored in mem0 tagged with the task type and outcome (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Reflexion — trace-to-reflection loop). Before starting a new task, the top-k relevant reflections are retrieved and prepended to the agent's system prompt (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Reflexion — trace-to-reflection loop).\n- **Voyager skill library:** After a successful coding, shell, or refactor workflow, the solution pattern is extracted as a named skill containing a description and a code/command template, which is stored in a local SQLite table (`~/.ares/skills.db`) (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Voyager skill library). Before routing a task, top-k similar skills are retrieved via embedding similarity and surfaced to the orchestrator as hints, pairing with and extending the existing `learning.py` and `/learn` command (docs/ares-independence-plan.md > Ares Proprietary Independence Plan > Phase 2: Intelligence Layer (all local, Ollama-only) > Voyager skill library).",
+      "router_tool_calls": [
+        "ares_agent"
+      ],
+      "latency_s": 30.6,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true,
+      "unverified_citations": []
+    }
+  ]
+}
