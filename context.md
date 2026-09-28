@@ -233,4 +233,16 @@ this machine, and Cloud Run needs a billing-enabled project.
 **Phase 7**: README final pass done (stale 0.35 floor / 2.5-flash /
 "deployment later" text fixed; Deployment + Evaluation sections).
 
-Open items: e2e eval failures (see README), live Cloud Run deploy.
+**Free-tier deploy (branch `feat/free-tier-deploy`, PR #6)**: GCP
+always-free covers this (Cloud Run 2M req / 180k vCPU-s / 360k GB-s,
+Artifact Registry 0.5GB, Secret Manager 6 versions) but still needs a
+billing account (card). **Deploy to a separate GCP project from the
+Gemini key** — linking billing to the key's project moves it to paid
+Tier 1. Measured: ~130MiB peak RAM → 512Mi; image ~200MB compressed →
+AR cleanup policy keeps 2. `deploy/deploy.sh setup|deploy|ask` builds
+locally (no Cloud Build), gates on retrieval eval, optional $1 budget
+alert. Bash gotcha hit while writing it: an apostrophe inside
+`"${VAR:?message}"` opens a quote — broke parsing 60 lines later.
+
+Open items: e2e eval failures (see README), live Cloud Run deploy (needs
+Arjun: GCP account + new project + `gcloud auth login`).
