@@ -105,10 +105,9 @@ PROJECTS: dict[str, ProjectConfig] = {
             "A local, Ollama-backed multi-agent CLI/REPL (orchestrator plus "
             "coder, thinker and runner agents, Serena code navigation, mem0 "
             "long-term memory, slash commands, install and requirements). Docs "
-            "also cover its independence plan from OpenJarvis: the runtime "
-            "boundary, next steps, test plan, and a Phase 2 intelligence layer "
-            "(Reflexion, Voyager skill library, ReWOO planning, Self-RAG, "
-            "SWE-agent tools, hardware-aware model profiles)."
+            "also cover the A2A agent servers and running them in Docker, "
+            "Langfuse and local trace storage, and routing learned from "
+            "/good and /bad ratings."
         ),
     ),
 }
