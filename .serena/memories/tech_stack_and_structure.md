@@ -50,6 +50,6 @@ deploy/
 Dockerfile, docker-compose.yml, .env.example
 ```
 
-Build order (see context.md for authoritative status): scaffold (done) →
+Build order: scaffold (done) →
 agents + tools → RAG pipeline → observability → hardening → eval harness →
 deployment → README.

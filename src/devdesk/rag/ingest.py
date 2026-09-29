@@ -2,7 +2,7 @@
 
 No doc-generation fallback this phase: only content that actually exists in
 the project's docs goes into the index, so nothing in the corpus is
-model-synthesized. See context.md for why this was deferred.
+model-synthesized. `doc_generator` stays a deliberately empty stub.
 """
 
 from __future__ import annotations

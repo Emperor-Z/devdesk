@@ -135,7 +135,7 @@ explaining why.
 ## Setup
 
 Requires Python 3.12 (3.14 has had `chromadb`/dependency compatibility
-issues at time of writing — see `context.md`).
+issues at time of writing).
 
 ```bash
 uv venv -p 3.12 .venv
@@ -212,8 +212,8 @@ a live GCP project yet.
 
 All seven build phases are done — scaffold, agents/tools/RAG,
 observability, hardening, eval harness, deployment config, and this
-README. See `context.md` for the full build log. Open items: one
-held-out eval miss (below), and a live Cloud Run deploy.
+README. Open items: one held-out eval miss (below), and a live Cloud
+Run deploy.
 
 ## Evaluation
 
