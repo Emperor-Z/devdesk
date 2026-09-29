@@ -121,6 +121,29 @@ def test_ingest_skips_tool_cache_dirs_and_prunes_them(fake_embedder, tmp_path):
     assert sources == {"docs/real.md"}
 
 
+def test_ingest_in_git_repo_skips_untracked_and_ignored_docs(fake_embedder, tmp_path):
+    import subprocess
+
+    from devdesk.config import ProjectConfig
+    from devdesk.rag import ingest
+
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "README.md").write_text("# Readme\n\nPublic docs.")
+    (src / ".gitignore").write_text("context.md\n")
+    subprocess.run(["git", "init", "-q"], cwd=src, check=True)
+    subprocess.run(["git", "add", "README.md", ".gitignore"], cwd=src, check=True)
+    (src / "context.md").write_text("# Notes\n\nLocal-only notes.")
+    (src / "draft.md").write_text("# Draft\n\nNot added yet.")
+
+    store = VectorStore(persist_dir=str(tmp_path / "chroma"), embedder=fake_embedder)
+    n = ingest.ingest_project(ProjectConfig("proj", src, "coll"), store)
+
+    assert n == 1
+    sources = {m["source_file"] for m in store._collection("coll").get()["metadatas"]}
+    assert sources == {"README.md"}
+
+
 def test_min_query_similarity_is_backend_specific_and_overridable(monkeypatch):
     from devdesk import config
 

@@ -7,6 +7,7 @@ model-synthesized. See context.md for why this was deferred.
 
 from __future__ import annotations
 
+import subprocess
 import time
 from pathlib import Path
 
@@ -33,10 +34,34 @@ _SKIP_DIRS = {
 _SECONDS_BETWEEN_FILES = 3.0
 
 
+def _git_tracked(source_path: Path) -> set[Path] | None:
+    """Files git tracks under `source_path`, or None if it isn't a git repo.
+
+    Gitignored files are often local-only notes; they must never reach an
+    index that may be served from a deployed container.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "ls-files", "-z"],
+            cwd=source_path,
+            capture_output=True,
+            check=False,
+            timeout=10,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    return {source_path / name for name in proc.stdout.decode().split("\0") if name}
+
+
 def _iter_doc_files(source_path: Path):
+    tracked = _git_tracked(source_path)
     for pattern in _DOC_GLOBS:
         for path in source_path.rglob(pattern):
             if any(part in _SKIP_DIRS for part in path.parts):
+                continue
+            if tracked is not None and path not in tracked:
                 continue
             yield path
 
