@@ -203,10 +203,24 @@ gotchas are in `deploy/iam_setup.md`. The setup is least-privilege:
 - deployed to a **separate project** from the Gemini key, because linking
   billing to the key's project moves it off the Gemini free tier.
 
+Two ways to rehearse a deploy without a GCP project:
+
+```bash
+DRY_RUN=1 deploy/deploy.sh setup    # prints every gcloud command it would run
+DRY_RUN=1 deploy/deploy.sh deploy   # real eval gate, image build and manifest render;
+                                    # push and rollout are printed, not run
+deploy/deploy.sh local              # the image as Cloud Run runs it: port 8080,
+                                    # 512Mi/1 CPU, env from the manifest; smoke-tests /ask
+```
+
+A dry run uses the stand-in project `devdesk-standin` unless `PROJECT_ID`
+is set, and fails if the rendered manifest still has a placeholder in it.
+Once a real project exists, the same commands without `DRY_RUN` deploy it.
+
 Verified locally: the container image builds, answers a real question
 end to end (routed to `ares_agent`, fully cited, ~25s), rejects invalid
 input with 422, and refuses to start without a key. Not yet deployed to
-a live GCP project yet.
+a live GCP project.
 
 ## Status
 
