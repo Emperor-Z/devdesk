@@ -1,0 +1,119 @@
+{
+  "mode": "e2e",
+  "model": "gemini-3.5-flash-lite",
+  "embedder": "gemini-embedding-001",
+  "min_query_similarity": 0.64,
+  "timestamp": "20260929T181117Z",
+  "summary": {
+    "n": 6,
+    "degraded": 0,
+    "pass_rate": 0.833,
+    "routing_accuracy": 1.0,
+    "citation_accuracy": 1.0,
+    "keyword_recall": 0.833,
+    "abstention_rate": null,
+    "unverified_citations": 0,
+    "latency_p50_s": 29.67,
+    "latency_max_s": 37.15
+  },
+  "results": [
+    {
+      "id": "ho-kaggle-caveats",
+      "expected_agent": "verisim",
+      "answer": "The downsides of serving the model through a Kaggle notebook tunnel are:\n\n- **Ephemeral:** The tunnel URL changes every time the notebook restarts; Kaggle sessions cap around 12 hours and time out on idle. This makes it fine for a demo or recording session, but not for always-on hosting (docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log)).\n- **Latency:** Each generation round-trips from your laptop to Cloudflare to the GPU. While still far faster than local CPU, it is not instant (docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log)).\n- **Open endpoint:** A `trycloudflare.com` URL is public while it is up. Although the risk is low (it's just an LLM with no persistent data), you should not leave it running unattended or send sensitive input (docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log)).\n- **Reproducibility:** You need to explicitly record which model and platform produced any result you want to keep (such as noting the `OLLAMA_MODEL` value and \"Kaggle T4\") (docs/kaggle_gpu_setup.md > !OLLAMA_HOST=0.0.0.0:11434 ollama pull qwen2.5:14b-instruct-q4_K_M > Caveats (note for reflection log)).",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 25.65,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true,
+      "unverified_citations": []
+    },
+    {
+      "id": "ho-consent-events",
+      "expected_agent": "verisim",
+      "answer": "The consent-gate classifier labels player utterances into four events, and each changes trust as follows:\n\n* `deescalation_lever`: changes trust by **+15** (and increments `deescalations++`) (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as)).\n* `plain_explanation`: changes trust by **+10** (and increments `plainExplanations++`) (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as)).\n* `escalation_trigger`: changes trust by **−20** (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as)).\n* `neutral`: changes trust by **0** (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Event taxonomy (what the classifier must label each player utterance as)).",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 29.65,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true,
+      "unverified_citations": []
+    },
+    {
+      "id": "ho-consent-unvalidated",
+      "expected_agent": "verisim",
+      "answer": "An actual in-browser click-through of the test menu has still not been validated to confirm that a refused push shows Ray's refusal line, a permitted push posts the result message into the chat, and the trust-state prompt line measurably changes the local model's patient-agent dialogue (devdesk_verisim: docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine). \n\nAdditionally, because Ollama wasn't brought up alongside the Convex backend during that session, the agents/LLM side of the loop remained unexercised with only the map/schema/data layer validated, and headless browser automation (synthetic mouse events) proved too unreliable to navigate the in-game camera precisely enough to click a specific character (devdesk_verisim: docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine).",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 29.65,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [
+        "classifier"
+      ],
+      "abstained": null,
+      "passed": false,
+      "unverified_citations": []
+    },
+    {
+      "id": "ho-difficulty-dial",
+      "expected_agent": "verisim",
+      "answer": "All thresholds and deltas are constants at the top of `consentGate.ts` (`START_TRUST`, `DEESCALATION_GAIN`, `WARY_AT`, `CONSENTING_AT`, `SELF_DISCHARGE_REFUSALS`, …). The persona card's \"Difficulty dial\" (hostility, bystander panic, time pressure) maps onto `START_TRUST` and the gain/loss magnitudes (docs/consent_gate.md > VeriSim Consent-Gate — Design Spec & State Machine > Tuning / difficulty dial).",
+      "router_tool_calls": [
+        "verisim_agent"
+      ],
+      "latency_s": 37.15,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true,
+      "unverified_citations": []
+    },
+    {
+      "id": "ho-ares-requirements",
+      "expected_agent": "ares",
+      "answer": "To run Ares, you need the following installed:\n\n- Python 3.12+ (devdesk_ares: README.md > Ares > Requirements)\n- [Ollama](https://ollama.com) with the models in `ares/config.py` pulled (`start.sh` tells you which are missing) (devdesk_ares: README.md > Ares > Requirements)\n- Docker, for the optional Langfuse tracing stack (devdesk_ares: README.md > Ares > Requirements)\n- [Serena](https://github.com/oraios/serena) on your `PATH`, for `/serena` (devdesk_ares: README.md > Ares > Requirements)",
+      "router_tool_calls": [
+        "ares_agent"
+      ],
+      "latency_s": 30.17,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true,
+      "unverified_citations": []
+    },
+    {
+      "id": "ho-ares-serena-project",
+      "expected_agent": "ares",
+      "answer": "To point Ares's `/serena` command at a different codebase, set the `ARES_SERENA_PROJECT` environment variable (by default, `/serena` works on the directory you launch Ares from) `(README.md > Ares > Run)`.",
+      "router_tool_calls": [
+        "ares_agent"
+      ],
+      "latency_s": 29.67,
+      "degraded": false,
+      "routing_correct": true,
+      "cited_expected_source": true,
+      "missing_keywords": [],
+      "abstained": null,
+      "passed": true,
+      "unverified_citations": []
+    }
+  ]
+}

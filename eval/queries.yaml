@@ -75,28 +75,28 @@
   expected_sources: [README.md]
   expected_keywords: [/remember]
 
-- id: ares-hardware-profiles
-  question: "What's the plan for hardware-aware model profiles in Ares?"
+- id: ares-routing-learning
+  question: "How does Ares learn which agent to route a request to?"
   expected_agent: ares
-  expected_sources: [docs/ares-independence-plan.md]
-  expected_keywords: [hardware.py]
+  expected_sources: [README.md]
+  expected_keywords: [feedback.jsonl]
 
-- id: ares-next-steps
-  question: "What's next on the Ares independence plan from OpenJarvis?"
+- id: ares-docker
+  question: "How do I run the Ares agent servers in Docker, and why is it Linux only?"
   expected_agent: ares
-  expected_sources: [docs/ares-independence-plan.md]
-  expected_keywords: [ares/runtime]
+  expected_sources: [README.md]
+  expected_keywords: [host networking]
 
-- id: ares-voyager
-  question: "How will the Voyager-style skill library work in Ares?"
+- id: ares-traces
+  question: "Where do Ares traces go if Langfuse isn't running?"
   expected_agent: ares
-  expected_sources: [docs/ares-independence-plan.md]
-  expected_keywords: [skills.db]
+  expected_sources: [README.md, .serena/memories/project/ares_overview.md]
+  expected_keywords: [traces.db]
 
 - id: cross-ollama
   question: "Which of my projects run local models through Ollama?"
   expected_agent: cross
-  expected_sources: [docs/kaggle_gpu_setup.md, docs/ares-independence-plan.md, README.md]
+  expected_sources: [docs/kaggle_gpu_setup.md, README.md]
   expected_keywords: [verisim, ares]
 
 - id: none-kubernetes
@@ -151,9 +151,9 @@
   expected_sources: [README.md]
   expected_keywords: [ollama, serena]
 
-- id: ho-ares-reflexion
+- id: ho-ares-serena-project
   split: holdout
-  question: "How would Ares learn from its past task traces?"
+  question: "How do I point Ares's /serena command at a different codebase?"
   expected_agent: ares
-  expected_sources: [docs/ares-independence-plan.md]
-  expected_keywords: [langfuse, mem0]
+  expected_sources: [README.md]
+  expected_keywords: [ARES_SERENA_PROJECT]

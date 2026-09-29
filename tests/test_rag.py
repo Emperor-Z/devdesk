@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from devdesk.rag.chunking import Chunk, chunk_markdown, count_tokens
-from devdesk.rag.vectorstore import VectorStore, chunk_id
+from devdesk.rag.vectorstore import VectorStore, chunk_id, embedding_text
 
 
 def test_chunk_markdown_respects_token_cap():
@@ -75,6 +75,18 @@ def test_chunk_id_is_stable_and_content_sensitive():
     assert chunk_id("p", "f.md", c1) != chunk_id("p", "f.md", c2)
 
 
+def test_embedding_text_carries_file_and_heading_but_stored_text_does_not(fake_embedder, tmp_path):
+    chunk = Chunk(text="The classifier's accuracy.", header_path="Consent gate > Not validated yet", index=0)
+    assert embedding_text("docs/consent_gate.md", chunk) == (
+        "docs/consent_gate.md > Consent gate > Not validated yet\n\nThe classifier's accuracy."
+    )
+
+    store = _vs(fake_embedder, tmp_path)
+    store.upsert_source_file("verisim", "test_collection", "docs/consent_gate.md", [chunk])
+    hits = store.query("test_collection", "not validated yet", k=1, min_similarity=0.0)
+    assert hits[0].text == "The classifier's accuracy."
+
+
 def test_prune_source_files_drops_deleted_files_only(fake_embedder, tmp_path):
     store = _vs(fake_embedder, tmp_path)
     store.upsert_source_file("proj", "coll", "keep.md", [Chunk(text="kept", header_path="A", index=0)])
@@ -107,6 +119,29 @@ def test_ingest_skips_tool_cache_dirs_and_prunes_them(fake_embedder, tmp_path):
     assert n == 1
     sources = {m["source_file"] for m in store._collection("coll").get()["metadatas"]}
     assert sources == {"docs/real.md"}
+
+
+def test_ingest_in_git_repo_skips_untracked_and_ignored_docs(fake_embedder, tmp_path):
+    import subprocess
+
+    from devdesk.config import ProjectConfig
+    from devdesk.rag import ingest
+
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "README.md").write_text("# Readme\n\nPublic docs.")
+    (src / ".gitignore").write_text("context.md\n")
+    subprocess.run(["git", "init", "-q"], cwd=src, check=True)
+    subprocess.run(["git", "add", "README.md", ".gitignore"], cwd=src, check=True)
+    (src / "context.md").write_text("# Notes\n\nLocal-only notes.")
+    (src / "draft.md").write_text("# Draft\n\nNot added yet.")
+
+    store = VectorStore(persist_dir=str(tmp_path / "chroma"), embedder=fake_embedder)
+    n = ingest.ingest_project(ProjectConfig("proj", src, "coll"), store)
+
+    assert n == 1
+    sources = {m["source_file"] for m in store._collection("coll").get()["metadatas"]}
+    assert sources == {"README.md"}
 
 
 def test_min_query_similarity_is_backend_specific_and_overridable(monkeypatch):

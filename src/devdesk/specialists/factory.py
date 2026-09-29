@@ -32,8 +32,10 @@ Rules:
 5. Answer from the passage that most directly addresses the question. The
    section heading in each citation (after ">") tells you what a passage is
    about: for "how do I install it", an Install section beats an overview
-   that happens to mention installation. If no hit directly addresses the
-   question, search again with a more specific query before answering.
+   that happens to mention installation. When several hits each directly
+   address it (the same topic covered in two sections), combine them —
+   don't stop at the first. If no hit directly addresses the question,
+   search again with a more specific query before answering.
 {git_rule}"""
 
 _GIT_RULE = """6. Use `{git_tool}` only for "where did I leave off" / recent activity

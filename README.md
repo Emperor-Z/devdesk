@@ -135,7 +135,7 @@ explaining why.
 ## Setup
 
 Requires Python 3.12 (3.14 has had `chromadb`/dependency compatibility
-issues at time of writing — see `context.md`).
+issues at time of writing).
 
 ```bash
 uv venv -p 3.12 .venv
@@ -203,17 +203,30 @@ gotchas are in `deploy/iam_setup.md`. The setup is least-privilege:
 - deployed to a **separate project** from the Gemini key, because linking
   billing to the key's project moves it off the Gemini free tier.
 
+Two ways to rehearse a deploy without a GCP project:
+
+```bash
+DRY_RUN=1 deploy/deploy.sh setup    # prints every gcloud command it would run
+DRY_RUN=1 deploy/deploy.sh deploy   # real eval gate, image build and manifest render;
+                                    # push and rollout are printed, not run
+deploy/deploy.sh local              # the image as Cloud Run runs it: port 8080,
+                                    # 512Mi/1 CPU, env from the manifest; smoke-tests /ask
+```
+
+A dry run uses the stand-in project `devdesk-standin` unless `PROJECT_ID`
+is set, and fails if the rendered manifest still has a placeholder in it.
+Once a real project exists, the same commands without `DRY_RUN` deploy it.
+
 Verified locally: the container image builds, answers a real question
 end to end (routed to `ares_agent`, fully cited, ~25s), rejects invalid
 input with 422, and refuses to start without a key. Not yet deployed to
-a live GCP project yet.
+a live GCP project.
 
 ## Status
 
 All seven build phases are done — scaffold, agents/tools/RAG,
 observability, hardening, eval harness, deployment config, and this
-README. See `context.md` for the full build log. Open items: one
-held-out eval miss (below), and a live Cloud Run deploy.
+README. Open item: a live Cloud Run deploy.
 
 ## Evaluation
 
@@ -231,7 +244,13 @@ python eval/run_eval.py --mode e2e --ids ares-memory none-sourdough --fail-under
 - **holdout (6)**: written *before* any prompt fixes, on doc sections the
   dev set never touches, and never used to tune them. Summaries report
   both pass rates, so a fix that only helps the questions it was made for
-  shows up as a dev/holdout gap.
+  shows up as a dev/holdout gap. One holdout miss has since been fixed
+  (below), so the holdout is no longer fully untouched.
+
+Four Ares queries (three dev, one holdout) were replaced on 29 Sep 2026:
+the Ares doc they targeted was removed from that repo, so they were
+testing content that no longer exists. The replacements target Ares's
+current README and were written from the doc, not from DevDesk's answers.
 
 Scoring is deterministic — no LLM judge:
 
@@ -243,8 +262,9 @@ Scoring is deterministic — no LLM judge:
   503s) are counted as `degraded` and excluded from quality rates.
   Also counts citations the verifier had to strip (below).
 
-Latest retrieval run (gemini-embedding-001): hit@k **1.0**, hit@1 **0.79**,
-MRR **0.89**, out-of-scope rejected **2/2**. The first run caught a real
+Latest retrieval run (gemini-embedding-001, contextual chunk headers):
+22/22, hit@k **1.0**, hit@1 **0.85**, MRR **0.925**, out-of-scope rejected
+**2/2** (was hit@1 0.79, MRR 0.89 before chunk headers). The first run caught a real
 bug: the 0.35 similarity cutoff (tuned for MiniLM) let everything through
 under Gemini embeddings, whose similarity floor is ~0.5 — a sourdough
 question scored 0.51 against the VeriSim docs. Measured relevant hits
@@ -257,7 +277,8 @@ bottom out at 0.661 and out-of-scope at 0.621, so the Gemini cutoff is now
 |---|---|---|---|---|---|---|
 | Baseline | 12/16 | 3/6 | 0.86 / 0.67 | 1.00 / 0.83 | 0.86 / 0.83 | 2/2 |
 | + tenant descriptions, answer rules | **16/16** | 4/6 | **1.00** (all 22) | 0.95 | 0.95 | 2/2 |
-| + citation verifier | — | **5/6** | 1.00 | 0.83 | 1.00 | — |
+| + citation verifier | — | 5/6 | 1.00 | 0.83 | 1.00 | — |
+| + contextual chunks, combine-sections rule | **16/16** | **6/6** | 1.00 | 1.00 | 1.00 | 2/2 |
 
 Result files are in `eval/results/`. What moved the numbers:
 
@@ -284,14 +305,23 @@ Result files are in `eval/results/`. What moved the numbers:
    stripped from the answer, logged as a WARNING, and reported in the
    `/ask` response. Checked against all 44 historical eval answers, it
    flags exactly that one fabrication and nothing else.
+4. **Contextual chunk headers.** Chunks were embedded as bare section
+   bodies, so a question phrased like a heading ("what hasn't been
+   validated yet?") couldn't match the section titled "Not validated yet".
+   Each chunk is now embedded as `file > heading path` plus its body (the
+   stored text is unchanged). That moved the right section from rank 4 to
+   rank 1. The answer then used one of the doc's two "not validated"
+   sections and dropped the other, so the specialist rule that said
+   "answer from the passage" now says to combine sections that each
+   answer the question.
 
-**Honest reading:** dev hit 16/16 but held-out stayed below it, so part of
-the dev gain is specific to those questions. Holdout moved from 3/6 to
-5/6. The run-to-run noise at this sample size is about ±1 question. The
-one remaining miss (`ho-consent-unvalidated`) is a grounded answer from
-README's Status section rather than the dedicated "Not validated yet"
-section, which retrieval ranks 4th. That's a retrieval-ranking issue, and
-the expectation was deliberately not widened after the fact.
+**Honest reading:** both splits now pass, but the last holdout fix was made
+while looking at a holdout failure, so 6/6 overstates how well this
+generalises. Both fixes are general (chunk headers help every query; the
+rule has no example from the eval), and the dev split didn't regress, but
+a fresh held-out set is the real test. The expectation
+(`ho-consent-unvalidated` must mention the classifier) was not widened.
+Run-to-run noise at this sample size is about ±1 question.
 
 Model choice came from this too: gemini-2.5-flash's free tier on this key
 is **20 requests/day** — about 4 questions at 5+ model calls each — and the
