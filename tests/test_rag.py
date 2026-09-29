@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from devdesk.rag.chunking import Chunk, chunk_markdown, count_tokens
-from devdesk.rag.vectorstore import VectorStore, chunk_id
+from devdesk.rag.vectorstore import VectorStore, chunk_id, embedding_text
 
 
 def test_chunk_markdown_respects_token_cap():
@@ -73,6 +73,18 @@ def test_chunk_id_is_stable_and_content_sensitive():
     c2 = Chunk(text="hello world", header_path="A", index=0)
     assert chunk_id("p", "f.md", c1) == chunk_id("p", "f.md", c1)
     assert chunk_id("p", "f.md", c1) != chunk_id("p", "f.md", c2)
+
+
+def test_embedding_text_carries_file_and_heading_but_stored_text_does_not(fake_embedder, tmp_path):
+    chunk = Chunk(text="The classifier's accuracy.", header_path="Consent gate > Not validated yet", index=0)
+    assert embedding_text("docs/consent_gate.md", chunk) == (
+        "docs/consent_gate.md > Consent gate > Not validated yet\n\nThe classifier's accuracy."
+    )
+
+    store = _vs(fake_embedder, tmp_path)
+    store.upsert_source_file("verisim", "test_collection", "docs/consent_gate.md", [chunk])
+    hits = store.query("test_collection", "not validated yet", k=1, min_similarity=0.0)
+    assert hits[0].text == "The classifier's accuracy."
 
 
 def test_prune_source_files_drops_deleted_files_only(fake_embedder, tmp_path):

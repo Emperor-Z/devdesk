@@ -23,6 +23,16 @@ def chunk_id(project: str, source_file: str, chunk: Chunk) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+def embedding_text(source_file: str, chunk: Chunk) -> str:
+    """Text actually embedded for a chunk: body prefixed with where it lives.
+
+    Section bodies alone lose their headings, so a question phrased like a
+    heading ("what hasn't been validated yet?") can't match the section
+    whose heading says exactly that. The stored document stays the bare body.
+    """
+    return f"{source_file} > {chunk.header_path}\n\n{chunk.text}"
+
+
 @dataclass(frozen=True)
 class SearchHit:
     text: str
@@ -56,7 +66,7 @@ class VectorStore:
 
         new_ids = [chunk_id(project, source_file, c) for c in chunks]
         if chunks:
-            embeddings = self._embed([c.text for c in chunks])
+            embeddings = self._embed([embedding_text(source_file, c) for c in chunks])
             collection.upsert(
                 ids=new_ids,
                 embeddings=embeddings,
