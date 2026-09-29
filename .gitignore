@@ -18,3 +18,4 @@ data/.chroma/
 logs/
 *.log
 .DS_Store
+context.md
