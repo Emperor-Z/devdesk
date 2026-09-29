@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from devdesk.citations import record_hits
 from devdesk.config import PROJECTS
 from devdesk.rag.vectorstore import VectorStore
 
@@ -31,6 +32,7 @@ def search_docs(project: str, query: str, k: int = 5) -> dict:
         return {"error": f"unknown project '{project}'", "hits": []}
 
     hits = _store.query(cfg.collection_name, query, k=k)
+    record_hits([{"source_file": h.source_file, "header_path": h.header_path} for h in hits])
     result: dict = {
         "hits": [
             {

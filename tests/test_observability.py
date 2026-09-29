@@ -81,6 +81,22 @@ def test_tool_call_error_logged(tmp_path):
     records = _read_jsonl(tmp_path / "devdesk.jsonl")
     assert records[-1]["event"] == "tool_call_error"
     assert "boom" in records[-1]["error"]
+    # Cloud Logging severity: errors are ERROR, everything else INFO.
+    assert records[-1]["severity"] == "ERROR"
+    assert records[0]["severity"] == "INFO"
+
+
+def test_file_sink_can_be_disabled_for_containers(tmp_path, capsys):
+    with patch("devdesk.observability.logging.LOG_DIR", tmp_path):
+        plugin = StructuredLoggingPlugin(log_to_file=False)
+        asyncio.run(
+            plugin.before_tool_callback(
+                tool=SimpleNamespace(name="t"), tool_args={}, tool_context=_fake_tool_context()
+            )
+        )
+
+    assert not (tmp_path / "devdesk.jsonl").exists()
+    assert '"event": "tool_call_start"' in capsys.readouterr().out
 
 
 def test_model_call_start_and_end_logged(tmp_path):

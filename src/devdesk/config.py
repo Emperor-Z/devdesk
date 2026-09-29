@@ -33,6 +33,10 @@ LANGFUSE_SECRET_KEY = os.environ.get("LANGFUSE_SECRET_KEY", "")
 LANGFUSE_HOST = os.environ.get("LANGFUSE_HOST", "http://localhost:3000")
 
 LOG_DIR = REPO_ROOT / "logs"
+# JSONL file sink next to stdout. On by default locally; the Docker image
+# turns it off because Cloud Run's filesystem is RAM (the file would grow
+# into the memory limit) and stdout already goes to Cloud Logging.
+LOG_TO_FILE = os.environ.get("DEVDESK_LOG_FILE", "1") != "0"
 
 # MiniLM's own hard cutoff is 256 tokens; every embedding backend is capped
 # to the stricter of the two so chunk size never silently truncates.
@@ -51,9 +55,18 @@ _MIN_QUERY_SIMILARITY_BY_BACKEND = {"gemini": 0.64, "minilm": 0.35}
 
 @dataclass(frozen=True)
 class ProjectConfig:
+    """One tenant. This is the whole onboarding surface: the specialist
+    agent, its tools, and the router's routing guidance are all generated
+    from these fields (see specialists/factory.py, router_agent.py)."""
+
     name: str
     source_path: Path | None
     collection_name: str
+    display_name: str = ""
+    # What the project is and what its indexed docs cover. The router
+    # routes on this, so write it from the doc inventory: topics a user
+    # would ask about, including the less obvious ones.
+    description: str = ""
 
 
 def _env_path(var: str, default: str | None) -> Path | None:
@@ -61,6 +74,8 @@ def _env_path(var: str, default: str | None) -> Path | None:
     if not raw:
         return None
     path = Path(raw).expanduser()
+    # A path that doesn't exist here (e.g. inside the Cloud Run image) means
+    # no local repo: the index still works, git_status_lookup is omitted.
     return path if path.exists() else None
 
 
@@ -69,11 +84,32 @@ PROJECTS: dict[str, ProjectConfig] = {
         name="verisim",
         source_path=_env_path("VERISIM_SOURCE_PATH", "/home/z/verisim"),
         collection_name="devdesk_verisim",
+        display_name="VeriSim (also called BayTrainer)",
+        description=(
+            "A clinical simulation-training game built on the AI Town codebase. "
+            "Docs cover: its architecture (Convex backend, game engine and "
+            "simulation loop, agent conversations and memories, client UI); the "
+            "'Chest Pain, A&E Bay 3' scenario and its persona cards (patient, "
+            "nurse, bystander, director); the consent-gate trust mechanic "
+            "(state machine, classifier events, difficulty tuning, validation "
+            "status); build notes and findings; running its LLM through Ollama "
+            "on a Kaggle or Colab GPU; hosting on Fly.io; and the level editor."
+        ),
     ),
     "ares": ProjectConfig(
         name="ares",
         source_path=_env_path("ARES_SOURCE_PATH", "/home/z/ares"),
         collection_name="devdesk_ares",
+        display_name="Ares",
+        description=(
+            "A local, Ollama-backed multi-agent CLI/REPL (orchestrator plus "
+            "coder, thinker and runner agents, Serena code navigation, mem0 "
+            "long-term memory, slash commands, install and requirements). Docs "
+            "also cover its independence plan from OpenJarvis: the runtime "
+            "boundary, next steps, test plan, and a Phase 2 intelligence layer "
+            "(Reflexion, Voyager skill library, ReWOO planning, Self-RAG, "
+            "SWE-agent tools, hardware-aware model profiles)."
+        ),
     ),
 }
 

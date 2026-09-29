@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from devdesk.citations import record_hits
 from devdesk.config import PROJECTS
 from devdesk.rag.vectorstore import VectorStore
 
@@ -40,4 +41,5 @@ def search_all_projects(query: str, k_per_project: int = 3) -> dict:
                 }
             )
     merged.sort(key=lambda h: h["similarity"], reverse=True)
+    record_hits(merged)
     return {"hits": merged}

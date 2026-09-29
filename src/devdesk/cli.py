@@ -12,9 +12,10 @@ from dataclasses import dataclass, field
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
+from devdesk.citations import start_request, verify_answer
 from devdesk.hardening.error_handling import GracefulDegradationPlugin
 from devdesk.hardening.rate_limit import RateLimitPlugin
-from devdesk.observability.logging import StructuredLoggingPlugin
+from devdesk.observability.logging import StructuredLoggingPlugin, log_event
 from devdesk.observability.tracing import LangfuseTracingPlugin
 from devdesk.router_agent import root_agent
 
@@ -29,6 +30,9 @@ class RunResult:
     # their agent name via AgentTool). Specialist-internal calls run in
     # AgentTool's own sub-invocation and aren't surfaced here.
     router_tool_calls: list[str] = field(default_factory=list)
+    # Citations stripped from `answer` because no search tool returned that
+    # source during this request (see citations.py).
+    unverified_citations: list[str] = field(default_factory=list)
 
 
 def build_runner() -> InMemoryRunner:
@@ -54,6 +58,7 @@ async def run_question(runner: InMemoryRunner, question: str) -> RunResult:
     message = types.Content(role="user", parts=[types.Part(text=question)])
 
     result = RunResult(answer="")
+    retrieved = start_request()
     try:
         async for event in runner.run_async(
             user_id=_USER_ID, session_id=session.id, new_message=message
@@ -67,6 +72,14 @@ async def run_question(runner: InMemoryRunner, question: str) -> RunResult:
         # big eval batch) accumulates every session in memory forever.
         await runner.session_service.delete_session(
             app_name=_APP_NAME, user_id=_USER_ID, session_id=session.id
+        )
+    result.answer, result.unverified_citations = verify_answer(result.answer, retrieved)
+    if result.unverified_citations:
+        log_event(
+            "citation_unverified",
+            severity="WARNING",
+            removed=result.unverified_citations,
+            retrieved=sorted(f"{f} > {h}" for f, h in retrieved),
         )
     return result
 

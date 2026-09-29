@@ -129,3 +129,15 @@ def test_summarize_retrieval_splits_in_and_out_of_scope():
     assert summary["hit_at_1"] == 0.5
     assert summary["mrr"] == 0.75
     assert summary["out_of_scope_rejected"] == 0.0
+
+
+def test_repo_query_set_has_a_holdout_split():
+    splits = {q.split for q in load_queries(REPO_QUERIES)}
+    assert splits == {"dev", "holdout"}
+
+
+def test_load_queries_rejects_unknown_split(tmp_path):
+    bad = tmp_path / "q.yaml"
+    bad.write_text("- {id: x, question: q, expected_agent: none, split: train}\n")
+    with pytest.raises(ValueError, match="split"):
+        load_queries(bad)

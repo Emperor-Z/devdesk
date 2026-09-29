@@ -70,9 +70,11 @@ async def run_e2e(queries: list[EvalQuery]) -> list[E2EScore]:
         try:
             result = await run_question(runner, q.question)
             answer, calls = result.answer, result.router_tool_calls
+            unverified = result.unverified_citations
         except Exception as exc:  # noqa: BLE001 — one bad query mustn't kill the batch
             answer, calls = f"(harness error: {type(exc).__name__}: {exc})", []
-        scores.append(score_e2e(q, answer, calls, time.monotonic() - start))
+            unverified = []
+        scores.append(score_e2e(q, answer, calls, time.monotonic() - start, unverified))
     return scores
 
 
@@ -108,6 +110,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--queries", type=Path, default=DEFAULT_QUERIES)
     parser.add_argument("--ids", nargs="+", help="only run these query ids")
     parser.add_argument(
+        "--split", choices=("dev", "holdout", "all"), default="all", help="query split to run"
+    )
+    parser.add_argument(
         "--fail-under", type=float, default=0.0, help="exit 1 if pass_rate is below this"
     )
     parser.add_argument("--no-save", action="store_true", help="don't write a result file")
@@ -119,13 +124,23 @@ def main(argv: list[str] | None = None) -> int:
         if unknown:
             parser.error(f"unknown query ids: {', '.join(sorted(unknown))}")
         queries = [q for q in queries if q.id in args.ids]
+    if args.split != "all":
+        queries = [q for q in queries if q.split == args.split]
 
     if args.mode == "retrieval":
         scores: list = run_retrieval(queries)
-        summary = summarize_retrieval(scores)
+        summarize = summarize_retrieval
     else:
         scores = asyncio.run(run_e2e(queries))
-        summary = summarize_e2e(scores)
+        summarize = summarize_e2e
+    summary = summarize(scores)
+    split_of = {q.id: q.split for q in queries}
+    # Per-split breakdown: a prompt change that lifts dev but not holdout is
+    # overfitting to the dev questions.
+    for split in ("dev", "holdout"):
+        subset = [s for s in scores if split_of[s.id] == split]
+        if subset and len(subset) < len(scores):
+            summary[f"{split}_pass_rate"] = summarize(subset)["pass_rate"]
 
     _print_table(args.mode, scores, summary)
 

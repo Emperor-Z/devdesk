@@ -228,7 +228,7 @@ Verified locally in Docker: healthz, a real /ask round trip (ares_agent,
 fully cited, 25s), 422 on bad input, no `.env` in image, non-root, and
 refusal to start without a key. **Not deployed to GCP**: no gcloud on
 this machine, and Cloud Run needs a billing-enabled project.
-51 unit tests pass.
+51 unit tests pass (at that point).
 
 **Phase 7**: README final pass done (stale 0.35 floor / 2.5-flash /
 "deployment later" text fixed; Deployment + Evaluation sections).

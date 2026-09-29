@@ -16,9 +16,13 @@ projects:
 | `ares` | Local, Ollama-backed multi-agent stack | [Emperor-Z/ares](https://github.com/Emperor-Z/ares) (public, MIT) |
 | `verisim` | Simulation-training dissertation project | [Emperor-Z/verisim](https://github.com/Emperor-Z/verisim) (public, MIT) |
 
-New tenants are added by pointing `PROJECTS` in `src/devdesk/config.py` at
-a source path and re-running `python -m devdesk.rag.ingest` — nothing else
-in the router or the RAG pipeline is tenant-specific.
+A tenant is one `ProjectConfig` entry in `src/devdesk/config.py`: a
+source path, a display name, and a description of what its docs cover.
+The specialist agent (`specialists/factory.py`), its tools, and the
+router's routing guidance and tool list are all generated from that
+entry, so onboarding is one config entry plus `python -m
+devdesk.rag.ingest`. The description matters: the router routes on it,
+which the eval showed directly (see Evaluation).
 
 ## Architecture
 
@@ -72,6 +76,13 @@ enforces a cosine-similarity floor (0.64 for Gemini embeddings, 0.35 for
 MiniLM — measured, see Evaluation) — weak matches are dropped rather
 than returned, so "no relevant docs" is a real, distinct outcome the agent
 can report instead of stretching a bad match into an answer.
+
+Instructions alone aren't a guarantee, so citations are also **verified
+deterministically** (`citations.py`): every (file, section) a search tool
+returns during a request is recorded, and any citation in the final answer
+that points anywhere else is stripped and logged as a WARNING. The eval
+caught a model inventing a source file, which is why this exists (see
+Evaluation).
 
 ## Observability
 
@@ -135,7 +146,8 @@ cp .env.example .env
 # edit .env: set GOOGLE_API_KEY (see below)
 
 python -m devdesk.rag.ingest        # index both tenants
-python -m devdesk.cli "what agents make up the Ares stack?"
+devdesk "what agents make up the Ares stack?"   # CLI
+devdesk-serve                                   # HTTP API on :8080, same as the container
 ```
 
 ### API keys you need
@@ -200,19 +212,28 @@ a live GCP project yet.
 
 All seven build phases are done — scaffold, agents/tools/RAG,
 observability, hardening, eval harness, deployment config, and this
-README. See `context.md` for the full build log. Open items: the
-failures in the e2e eval (above), and a live Cloud Run deploy.
+README. See `context.md` for the full build log. Open items: one
+held-out eval miss (below), and a live Cloud Run deploy.
 
 ## Evaluation
 
 ```bash
 python eval/run_eval.py --mode retrieval   # 1 embedding call/query, no chat model
 python eval/run_eval.py --mode e2e         # full router -> specialist loop
+python eval/run_eval.py --mode e2e --split holdout
 python eval/run_eval.py --mode e2e --ids ares-memory none-sourdough --fail-under 1.0
 ```
 
-16 hand-written queries (`eval/queries.yaml`): 7 VeriSim, 6 Ares, 1
-cross-project, 2 out-of-scope. Scoring is deterministic — no LLM judge:
+22 hand-written queries (`eval/queries.yaml`) in two splits:
+
+- **dev (16)**: 7 VeriSim, 6 Ares, 1 cross-project, 2 out-of-scope. Used
+  to find and fix failures.
+- **holdout (6)**: written *before* any prompt fixes, on doc sections the
+  dev set never touches, and never used to tune them. Summaries report
+  both pass rates, so a fix that only helps the questions it was made for
+  shows up as a dev/holdout gap.
+
+Scoring is deterministic — no LLM judge:
 
 - **retrieval**: hit@k, hit@1, MRR against the expected source files, and
   whether out-of-scope queries are rejected by the similarity cutoff.
@@ -220,6 +241,7 @@ cross-project, 2 out-of-scope. Scoring is deterministic — no LLM judge:
   expected source, required keywords, abstention on out-of-scope queries,
   latency. Answers replaced by the graceful-degradation fallback (free-tier
   503s) are counted as `degraded` and excluded from quality rates.
+  Also counts citations the verifier had to strip (below).
 
 Latest retrieval run (gemini-embedding-001): hit@k **1.0**, hit@1 **0.79**,
 MRR **0.89**, out-of-scope rejected **2/2**. The first run caught a real
@@ -229,30 +251,47 @@ question scored 0.51 against the VeriSim docs. Measured relevant hits
 bottom out at 0.661 and out-of-scope at 0.621, so the Gemini cutoff is now
 0.64, chosen per backend in `config.min_query_similarity()`.
 
-Latest e2e run (gemini-3.5-flash-lite, `eval/results/20260926T185617Z_e2e.json`):
+### e2e results (gemini-3.5-flash-lite)
 
-| metric | score |
-|---|---|
-| pass rate | **12/16 (0.75)** |
-| routing accuracy | 0.86 |
-| citation accuracy | 1.00 |
-| keyword recall | 0.86 |
-| out-of-scope abstention | 2/2 |
-| degraded (quota/503) | 0 |
-| latency p50 / max | 31s / 47s (mostly deliberate rate-limit pacing) |
+| | dev | holdout | routing | citations | keywords | abstention |
+|---|---|---|---|---|---|---|
+| Baseline | 12/16 | 3/6 | 0.86 / 0.67 | 1.00 / 0.83 | 0.86 / 0.83 | 2/2 |
+| + tenant descriptions, answer rules | **16/16** | 4/6 | **1.00** (all 22) | 0.95 | 0.95 | 2/2 |
+| + citation verifier | — | **5/6** | 1.00 | 0.83 | 1.00 | — |
 
-The four failures, read by hand:
+Result files are in `eval/results/`. What moved the numbers:
 
-- `verisim-fly-scaling` — genuine routing miss: tried `ares_agent` first
-  for a Convex/Fly.io question, recovered via cross-project search.
-- `verisim-finding-3` — the question never names a project, so the router
-  used `search_all_projects` (its own rule for ambiguous questions). Answer
-  correct and cited; left as a failure rather than loosening the
-  expectation after seeing results.
-- `verisim-engine-step` — correct flow described, but never names the
-  `runStep` entrypoint.
-- `ares-next-steps` — answered from the plan's Summary/Assumptions instead
-  of its "Status > Next" list, which retrieval had ranked 2nd.
+1. **Routing (the main fix).** The router only had one-line tenant
+   descriptions, so it sent a Fly.io question to Ares and Kaggle/Ollama
+   questions to Ares too ("Ollama-backed"), and it didn't recognise the
+   consent gate as VeriSim at all. The held-out baseline showed the same
+   failure independently, so this was a real gap, not a dev-set quirk.
+   Each `ProjectConfig` now carries a description of what its docs cover
+   (written from the doc inventory, not the eval questions), and the
+   router's guidance is generated from it. Routing went to 1.00 on both
+   splits.
+2. **Answer content.** Two dev failures retrieved the right passage but
+   paraphrased away the identifier (`runStep`) or answered from a general
+   Summary over the section that answered directly. The specialist now
+   has generic rules: keep concrete identifiers verbatim, and prefer the
+   passage whose section heading best matches the question. The examples
+   in the prompt are deliberately not the eval questions.
+3. **Citation verification.** The held-out set caught flash-lite citing
+   `docs/install_and_requirements.md`, which doesn't exist. Prompting
+   can't guarantee verbatim citations, so `citations.py` checks
+   deterministically: the search tools record every (file, section) they
+   return during a request, and any cited source not in that record is
+   stripped from the answer, logged as a WARNING, and reported in the
+   `/ask` response. Checked against all 44 historical eval answers, it
+   flags exactly that one fabrication and nothing else.
+
+**Honest reading:** dev hit 16/16 but held-out stayed below it, so part of
+the dev gain is specific to those questions. Holdout moved from 3/6 to
+5/6. The run-to-run noise at this sample size is about ±1 question. The
+one remaining miss (`ho-consent-unvalidated`) is a grounded answer from
+README's Status section rather than the dedicated "Not validated yet"
+section, which retrieval ranks 4th. That's a retrieval-ranking issue, and
+the expectation was deliberately not widened after the fact.
 
 Model choice came from this too: gemini-2.5-flash's free tier on this key
 is **20 requests/day** — about 4 questions at 5+ model calls each — and the
@@ -265,14 +304,16 @@ gemini-3.5-flash-lite, which ran all 16 without a quota error.
 ```
 src/devdesk/
   router_agent.py        # top-level LlmAgent, explicit delegation
-  specialists/            # one LlmAgent per tenant
+  specialists/factory.py  # builds each tenant's specialist from config
   tools/                  # search_docs, search_all_projects, git_status_lookup
   rag/                     # chunking, embeddings, vectorstore, ingest
   observability/          # structured logging + Langfuse plugins
   hardening/              # rate limiting + graceful degradation plugins
   evaluation/             # eval scoring (pure) + runner
-  cli.py                  # python -m devdesk.cli "question"
-  server.py               # FastAPI: POST /ask, GET /healthz
+  citations.py            # verifies answer citations against retrieved sources
+  cli.py                  # `devdesk "question"`
+
+  server.py               # `devdesk-serve`: POST /ask, GET /healthz
 eval/queries.yaml          # hand-written eval set
 eval/run_eval.py           # python eval/run_eval.py --mode retrieval|e2e
 eval/results/              # committed baseline runs
